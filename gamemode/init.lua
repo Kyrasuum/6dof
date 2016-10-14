@@ -1,3 +1,7 @@
+/*
+This File handles the player spawning and authentication
+Good hooks for server side edits
+*/
 AddCSLuaFile( "cl_init.lua" ) 
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "specialchars.lua" )

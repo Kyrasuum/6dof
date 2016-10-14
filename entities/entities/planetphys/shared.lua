@@ -1,3 +1,7 @@
+/*
+Declaritive statements for the entity
+No other roles yet
+*/
 --basic entity declarations
 ENT.Base 			= "base_gmodentity"
 ENT.Type 			= "anim"

@@ -1,5 +1,6 @@
 /*
 This entity handles the gravity from planets
+Keyvalues from map are handled here
 */
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")

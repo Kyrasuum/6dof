@@ -1,3 +1,7 @@
+/*
+This File handles the calcview and viewmodel hooks
+This is a good place to make edits to individual clients
+*/
 include( "shared.lua" )
 
 //Adjusts Viewmodel

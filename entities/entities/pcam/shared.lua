@@ -1,3 +1,6 @@
+/*
+This file handles the physics interactions of pcam
+*/
 --basic entity declarations
 ENT.Base 			= "base_gmodentity"
 ENT.Type 			= "anim"

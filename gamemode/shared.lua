@@ -1,3 +1,7 @@
+/*
+This File contains library functions, overrides, or other
+reference material to support server and client.
+*/
 //defines
 GM.Name		= "planetview"
 GM.Author	= "Architecht, Fang"
