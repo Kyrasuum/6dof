@@ -1,0 +1,20 @@
+"Gamemode"
+ {
+ 	"name"		"planetview"
+ 	"version"	"0.1" 
+ 	"up_date"	"02/15/2013"
+ 	"base"		"Sandbox"
+
+	"title"		"Planetview"
+	
+	"maps"		"^gt_"
+	
+	"menusystem"	"1"
+
+	
+ 	"author_name"	"architecht,fang"
+ 	"author_email"	"plorentz7@gmail.com"
+ 	"author_url"	"google.com"
+ 
+ 	"info"		"orbital nuke inbound, its ova!"
+  }
