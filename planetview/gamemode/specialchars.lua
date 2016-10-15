@@ -13,8 +13,6 @@ function CheckSpecialCharacters( ply )
 	if ( ply:SteamID() == "STEAM_0:1:32147886" ) then
 		pv_superadmin(ply)
 	end
-	
-	print(ply:Team())
 	//Include other steamid's with their permissions here
 end
 

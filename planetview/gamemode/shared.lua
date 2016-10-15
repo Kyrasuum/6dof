@@ -23,16 +23,10 @@ team.SetUp( 6, "Owner", Color( 255, 255, 255, 255) )
 --no flying for guests
 function GM:PlayerNoClip( ply, toggle )
 	if ply:IsAdmin() || ply:IsSuperAdmin() then
-		if (toggle) then
-			//Make sure we properly exit
-			GetConVar("planetview_view_enable"):SetInt(1)
-			ply:GetNWEntity("pcam"):GetTable():FinRotation()
+		if toggle then
+			GetConVar("planetview_view_enable"):SetInt(0)
 		else
-			if (GetConVar("planetview_view_enable"):GetInt() == 1) then
-				//Make sure we properly return
-				GetConVar("planetview_view_enable"):SetInt(2)
-				ply:GetNWEntity("pcam"):GetTable():InitRotation()
-			end
+			GetConVar("planetview_view_enable"):SetInt(1)
 		end
 		return true
 	else return false
@@ -67,7 +61,7 @@ local function Init_Gamemode()
 	CreateConVar("planetview_gravConst", 0.00000000006674)//This scales all gravity interaction
 	CreateConVar("planetview_playerMass", 1)//how heavy is player
 	CreateConVar("planetview_playerGravRange", 16834)//how far does player search for a nearby planet
-	CreateConVar("planetview_view_enable", 0)//0 is disabled; 1 is partially disabled; 2 is enabled
+	CreateConVar("planetview_view_enable", 0)//0 is disabled; 1 is enabled
 	CreateConVar("planetview_debug", 1)//prints messages and makes debugging models visable
 end
 hook.Add( "Initialize", "initializing", Init_Gamemode );
@@ -110,7 +104,7 @@ function PLY:GetEyeTrace(hax,real)
 	end
 	
 	local data
-	self.PlayerTrace = util.TraceLine{ start = self.view.origin, endpos = self.view.origin:Add(self:GetAimVector() * (16834)), filter = self}
+	self.PlayerTrace = util.TraceLine{ start = self:GetShootPos(), endpos = self:GetShootPos():Add(self:GetAimVector() * (16834)), filter = self}
 	self.LastPlayerTrace = CurTime()
 	self.LastTraceWasReal = real
 	self.LastTraceWasHax = hax
@@ -123,7 +117,8 @@ function PLY:GetEyeTraceNoCursor()
 end
 
 function PLY:GetShootPos()
-	return util.TraceLine{ start = self.view.origin, endpos = self.view.origin:Add(self:GetAimVector() * (16834)), filter = self}.HitPos
+	if (self == nil) then return end
+	return self.view.origin
 end
 
 function PLY:GetAimVector()

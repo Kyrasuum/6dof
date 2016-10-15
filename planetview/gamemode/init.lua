@@ -57,15 +57,20 @@ function GM:PlayerSpawn(ply)
 	ply:SetAllowWeaponsInVehicle( true )
 	
 	//Initial value so gmod can calm its tits
-	ply.view = {origin = ply:GetPos(), angles = ply:EyeAngles(), posang = ply:EyeAngles(), fov = 72}
+	ply.view = {origin = ply:GetPos(), angles = Angle(90,0,0)}
 	
 	//This entity is used to correct guns
-	//local pcam = ents.Create("pcam")
-	//pcam:SetOwner(ply)
-	//pcam:Spawn()
-	//ply:SetNWEntity("pcam", pcam) 
+	if (IsValid(ply:GetNWEntity("pcam"))) then 
+		ply:GetNWEntity("pcam"):Remove() 
+	end
+	local pcam = ents.Create("pcam")
+	if ( !IsValid( pcam ) ) then return end
+	pcam:SetPos(ply:GetPos())
+	pcam:SetOwner(ply)
+	pcam:Spawn()
+	ply:SetNWEntity("pcam", pcam)
 
-    ply:SetGravity( 0.00001 )  
+    ply:SetGravity( 0.00001 )  //depreciated use
     ply:SetWalkSpeed( 325 )  
 	ply:SetRunSpeed( 325 )
 	
