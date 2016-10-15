@@ -9,8 +9,16 @@ GM.Email	= "Oochitecht@gmail.com"
 GM.Website	= "breadfish.co.uk"
 DeriveGamemode( "sandbox" )
 
+GM.AllowAutoTeam = false
+GM.AllowSpectating = true
+
 //teams
-team.SetUp( 1, "Guest", Color( 148, 0, 211), true ) 
+team.SetUp( 0, "Joining", Color( 0, 0, 0, 255) ) 
+team.SetUp( 2, "Guest", Color( 255, 50, 50, 255) ) 
+team.SetUp( 3, "Member", Color( 200, 10, 10, 255) ) 
+team.SetUp( 4, "Admin", Color( 50, 50, 255, 255) ) 
+team.SetUp( 5, "SuperAdmin", Color( 10, 10, 200, 255) ) 
+team.SetUp( 6, "Owner", Color( 255, 255, 255, 255) ) 
 
 --no flying for guests
 function GM:PlayerNoClip( ply, toggle )

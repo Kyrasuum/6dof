@@ -1,8 +1,34 @@
 /*
+Joining Dialog is created here
 This File handles the calcview and viewmodel hooks
 This is a good place to make edits to individual clients
 */
 include( "shared.lua" )
+
+//Joining Dialog
+function set_team() 
+	Ready = vgui.Create( "DFrame" )
+	local width = 175
+	local height = 75
+	Ready:SetPos( (ScrW() - width) / 2, (ScrH() - height) / 2 )
+	Ready:SetSize( width, height )
+	Ready:SetTitle( "Welcome to the Server." )
+	Ready:SetVisible( true )
+	Ready:SetDraggable( false )
+	Ready:ShowCloseButton( false )
+	Ready:MakePopup()
+	ready1 = vgui.Create( "DButton", Ready )
+	ready1:SetPos( 20, 25 )
+	ready1:SetSize( 140, 40 )
+	ready1:SetText( "Ok" )
+	ready1.DoClick = function()
+		//unspectate
+		Ready:Hide()
+		RunConsoleCommand( "unspectate" )
+	end
+end
+concommand.Add( "sb_start", set_team )
+
 
 //Adjusts Viewmodel
 //Corrects Bounding Box

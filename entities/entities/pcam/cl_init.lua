@@ -6,11 +6,12 @@ This file makes the pcam visible for debug
 include("shared.lua")
 
 function ENT:RenderOverride()
-	if (GetConvar("planetview_debug"):GetInt() == 1 ) then
+	if (GetConVar("planetview_debug"):GetInt() == 1 ) then
 		self:DrawModel()
 		
-		local ply = self.Entity:GetOwner()
-		local min, max = ply:GetPhysicsObject():GetAABB()
+		local ply = self.Entity:GetOwner():GetPhysicsObject()
+		if(ply == nil || ply == NULL) then return false end
+		local min, max = ply:GetAABB()
 		
 		//Axis-Oriented Bounding box
 		//Creating vectors for each point
