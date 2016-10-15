@@ -2,9 +2,18 @@
 Just some protection for defining user groups
 */
 function CheckSpecialCharacters( ply )
+	//Architecht
 	if ( ply:SteamID() == "STEAM_0:0:0"  || ply:SteamID() == "STEAM_0:1:19289341" ) then
 		pv_owner(ply)
 	end
+	//Zguh
+	if ( ply:SteamID() == "STEAM_0:0:23441985" ) then
+		pv_superadmin(ply)
+	end
+	if ( ply:SteamID() == "STEAM_0:1:32147886" ) then
+		pv_superadmin(ply)
+	end
+	
 	print(ply:Team())
 	//Include other steamid's with their permissions here
 end
