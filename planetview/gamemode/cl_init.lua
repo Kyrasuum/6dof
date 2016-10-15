@@ -29,81 +29,77 @@ function set_team()
 end
 concommand.Add( "sb_start", set_team )
 
-//Adjusts Viewmodel
-function GM:PreDrawViewModel(vm, ply, weapon)
-	//Old viewmodel
-	if (ply != nil) then
-		if(GetConVar("planetview_view_enable"):GetInt() == 1) then 
-			//Edit viewmodel here
+//Create debug bounding box
+function GM:PreDrawViewModel(vm, weap)
+	local ply = LocalPlayer()
+	if(GetConVar("planetview_debug"):GetInt() == 1) then 
+		local min, max = ply:WorldSpaceAABB()
 			
-			//Calc Variables
-			local PlanetPos = GetPlanetPos(ply:GetPos())
-			local LocalPos = (ply:GetPos()-PlanetPos)
-			local RollAng = Vector(-LocalPos.y,math.abs(LocalPos.z),0):AngleEx(Vector(0,0,0)).y -90
-			local PitchAng = Vector(-LocalPos.x,LocalPos.z,0):AngleEx(Vector(0,0,0)).y -90
-			local PosAng = Angle(PitchAng,0,-RollAng)
-			local NewOrigin = ply:GetPos()+PosAng:Up()*61
-			
-			vm:SetPos( NewOrigin )
-			vm:SetAngles( ply.view.angles )
-		end
-		if(GetConVar("planetview_debug"):GetInt() == 1) then 
-			local min, max = ply:WorldSpaceAABB()
-				
-			//Axis-Oriented Bounding box
-			//Creating vectors for each point
-			local aaa = min
-			local aab = Vector(min.x, min.y, max.z)
-			local abb = Vector(min.x, max.y, max.z)
-			local aba = Vector(min.x, max.y, min.z)
-			local bab = Vector(max.x, min.y, max.z)
-			local baa = Vector(max.x, min.y, min.z)
-			local bba = Vector(max.x, max.y, min.z)
-			local bbb = max
-			
-			//12 lines make up a cube
-			//min corner
-			render.SetMaterial(Material( "cable/redlaser" ) )
-			render.DrawBeam(aaa, aab,3,0,0, Color(255,255,255,255))
-			render.DrawBeam(aaa, baa,3,0,0, Color(255,255,255,255))
-			render.DrawBeam(aaa, aba,3,0,0, Color(255,255,255,255))
-			//max corner
-			render.DrawBeam(bbb, bba,3,0,0, Color(255,255,255,255))
-			render.DrawBeam(bbb, bab,3,0,0, Color(255,255,255,255))
-			render.DrawBeam(bbb, abb,3,0,0, Color(255,255,255,255))
-			//remaining lines
-			render.DrawBeam(aab, abb,3,0,0, Color(255,255,255,255))
-			render.DrawBeam(aab, bab,3,0,0, Color(255,255,255,255))
-			
-			render.DrawBeam(baa, bab,3,0,0, Color(255,255,255,255))
-			render.DrawBeam(baa, bba,3,0,0, Color(255,255,255,255))
-			
-			render.DrawBeam(aba, bba,3,0,0, Color(255,255,255,255))
-			render.DrawBeam(aba, abb,3,0,0, Color(255,255,255,255))
-		end
+		//Axis-Oriented Bounding box
+		//Creating vectors for each point
+		local aaa = min
+		local aab = Vector(min.x, min.y, max.z)
+		local abb = Vector(min.x, max.y, max.z)
+		local aba = Vector(min.x, max.y, min.z)
+		local bab = Vector(max.x, min.y, max.z)
+		local baa = Vector(max.x, min.y, min.z)
+		local bba = Vector(max.x, max.y, min.z)
+		local bbb = max
+		
+		//12 lines make up a cube
+		//min corner
+		render.SetMaterial(Material( "cable/redlaser" ) )
+		render.DrawBeam(aaa, aab,3,0,0, Color(255,255,255,255))
+		render.DrawBeam(aaa, baa,3,0,0, Color(255,255,255,255))
+		render.DrawBeam(aaa, aba,3,0,0, Color(255,255,255,255))
+		//max corner
+		render.DrawBeam(bbb, bba,3,0,0, Color(255,255,255,255))
+		render.DrawBeam(bbb, bab,3,0,0, Color(255,255,255,255))
+		render.DrawBeam(bbb, abb,3,0,0, Color(255,255,255,255))
+		//remaining lines
+		render.DrawBeam(aab, abb,3,0,0, Color(255,255,255,255))
+		render.DrawBeam(aab, bab,3,0,0, Color(255,255,255,255))
+		
+		render.DrawBeam(baa, bab,3,0,0, Color(255,255,255,255))
+		render.DrawBeam(baa, bba,3,0,0, Color(255,255,255,255))
+		
+		render.DrawBeam(aba, bba,3,0,0, Color(255,255,255,255))
+		render.DrawBeam(aba, abb,3,0,0, Color(255,255,255,255))
 	end
 end
 
+//Adjusts Viewmodel
+function GM:CalcViewModelView( wep, vm, oldPos, oldAng, pos, ang )
+	ply = LocalPlayer()
+	if (ply != nil) then
+		if(GetConVar("planetview_view_enable"):GetInt() == 1) then 
+			//Edit viewmodel here	
+			pos = ply:GetNWVector("origin") 
+			ang = ply:GetNWAngle("angles")
+		end
+	end
+	return pos, ang
+end
 //Rotates plys 3d model
 //Calculates the plys View (Does not rotate)
 //Inputs the new ground object
-
 local function CalcView(ply, Origin, Angles, FieldOfView)
 	local View = {}
 	View.origin = Origin
 	View.angles = Angles
 	View.fov = FieldOfView
 	//Calc Variables
-	local PlanetPos = GetPlanetPos(ply:GetPos())
-	local LocalPos = (ply:GetPos()-PlanetPos)
+	local PlanetPos = GetPlanetPos(ply:RealGetPos())
+	local LocalPos = (ply:RealGetPos()-PlanetPos)
+	local LocalPos = (ply:RealGetPos()-PlanetPos)
 	local RollAng = Vector(-LocalPos.y,math.abs(LocalPos.z),0):AngleEx(Vector(0,0,0)).y -90
 	local PitchAng = Vector(-LocalPos.x,LocalPos.z,0):AngleEx(Vector(0,0,0)).y -90
 	local PosAng = Angle(PitchAng,0,-RollAng)
-	local EyeAng = ply:EyeAngles()
+	local EyeAng = ply:RealEyeAngles()
 	local _,CorrecAng = LocalToWorld(Origin,Angle(0,EyeAng.y,0),Origin,PosAng)
 		
 	--ply View
-	local NewOrigin = ply:GetPos()+CorrecAng:Up()*61
+	local NewOrigin = ply:RealGetPos()+CorrecAng:Up()*61
 	local _,NewAng = LocalToWorld(Origin,Angle(EyeAng.p,0,0),Origin,CorrecAng)
 		
 	if (GetConVar("planetview_view_enable"):GetInt() == 1)then
@@ -126,9 +122,15 @@ local function CalcView(ply, Origin, Angles, FieldOfView)
 		View.origin = NewOrigin
 		View.angles = NewAng
 		View.fov = FieldOfView
+		//Quicker than server update (visual only)
+		ply:SetNWVector("origin", NewOrigin)
+		ply:SetNWAngle("angles", NewAng)
+		//Syncing server
+		net.Start( "View" )
+			net.WriteVector( NewOrigin )
+			net.WriteAngle( NewAng )
+		net.SendToServer()
 	end
-	//Store it for outside access
-	ply.view = View
 	return View
 end
 hook.Add("CalcView", "CalcView", CalcView)

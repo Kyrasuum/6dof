@@ -2,7 +2,7 @@ versioninfo
 {
 	"editorversion" "400"
 	"editorbuild" "7252"
-	"mapversion" "270"
+	"mapversion" "271"
 	"formatversion" "100"
 	"prefab" "0"
 }
@@ -20,7 +20,7 @@ viewsettings
 world
 {
 	"id" "1"
-	"mapversion" "270"
+	"mapversion" "271"
 	"classname" "worldspawn"
 	"coldworld" "0"
 	"detailmaterial" "detail/detailsprites"
@@ -977,16 +977,6 @@ world
 		editor
 		{
 			"color" "145 238 0"
-			"visgroupshown" "1"
-			"visgroupautoshown" "1"
-		}
-	}
-	group
-	{
-		"id" "105244"
-		editor
-		{
-			"color" "231 240 0"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 		}
@@ -2763,7 +2753,7 @@ entity
 	"disableshadows" "1"
 	"InputFilter" "0"
 	"invert_exclusion" "0"
-	"origin" "-0 0 6240"
+	"origin" "0 0 6240"
 	"renderamt" "254"
 	"rendercolor" "0 0 0"
 	"renderfx" "0"

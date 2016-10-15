@@ -69,7 +69,7 @@ function ENT:Think()
 			self.Entity:InitRotation()
 		else
 			//Make newAngle rotate just like our view would
-			//phys:GetEntity().newAngle = ply.view.angles
+			//phys:GetEntity().newAngle = ply:GetNWAngle("angles")
 			self.Entity.newAngle = self.Entity.newAngle + Angle(1,0,0)
 			print(self.Entity.newAngle)
 			self.Entity:SetAngles(self.Entity.newAngle)
@@ -80,7 +80,7 @@ function ENT:Think()
 			self.Entity:InitRotation()
 		end
 		//Mimic the player
-		self.Entity:SetPos(ply:GetPos() + Vector(0,0,30.5))
+		self.Entity:SetPos(ply:RealGetPos() + Vector(0,0,30.5))
 		self.Entity:SetAngles(Angle(0,0,0))
 	end
 	if (!ply:Alive() && SERVER) then

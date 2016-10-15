@@ -70,57 +70,72 @@ hook.Add( "Initialize", "initializing", Init_Gamemode );
 									Overriding Functions Here
 								Grav Hull Designator inspired pattern
 *///==================================================================================////
-local PLY = FindMetaTable("Player")
+_R = debug.getregistry()
 
 //Storing the orginals
-//Placeholder (work on later)
-if !util.RealPlayerTrace then
-	util.RealPlayerTrace = util.GetPlayerTrace
-end
-//Placeholder (work on later)
-if !util.RealTraceLine then
-	util.RealTraceLine = util.TraceLine
+//Getters
+if !_R.Player.RealShootPos then
+	_R.Player.RealShootPos = _R.Player.GetShootPos
 end
 
-if !PLY.RealEyeTrace then
-	PLY.RealEyeTrace = PLY.GetEyeTrace
+if !_R.Player.RealGetAimVector then
+	_R.Player.RealGetAimVector = _R.Player.GetAimVector
 end
 
-if !PLY.RealEyeTraceNoCursor then
-	PLY.RealEyeTraceNoCursor = PLY.GetEyeTraceNoCursor
+if !_R.Entity.RealEyePos then
+	_R.Entity.RealEyePos = _R.Entity.EyePos
 end
 
-if !PLY.RealShootPos then
-	PLY.RealShootPos = PLY.GetShootPos
+if !_R.Entity.RealEyeAngles then
+	_R.Entity.RealEyeAngles = _R.Entity.EyeAngles
 end
 
-if !PLY.RealAimVector then
-	PLY.RealAimVector = PLY.GetAimVector
+if !_R.Entity.RealGetPos then
+	_R.Entity.RealGetPos = _R.Entity.GetPos
 end
-//Not sure if this is right
-function PLY:GetEyeTrace(hax,real)
-	if ( self.LastPlayerTrace == CurTime() && self.LastTraceWasReal == real && self.LastTraceWasHax == hax) then
-		return self.PlayerTrace
-	end
+
+if !_R.Entity.RealGetAngles then
+	_R.Entity.RealGetAngles = _R.Entity.GetAngles
+end
+//Setters
+if !_R.Player.RealSetEyeAngles then
+	_R.Player.RealSetEyeAngles = _R.Player.SetEyeAngles
+end
+if !_R.Entity.RealSetAngles then
+	_R.Entity.RealSetAngles = _R.Entity.SetAngles
+end
+//-------------------------------------------------------
+//New functions------------------------------------------
+//-------------------------------------------------------
+
+function _R.Player:GetShootPos()
+	return self:GetNWVector("origin") or self:RealGetShootPos()
+end
+
+function _R.Player:GetAimVector()
+	return self:GetNWAngle("angles"):Forward()
+end
+
+function _R.Entity:EyePos()
+	return self:GetNWVector("origin") or self:RealEyePos()
+end
+
+function _R.Entity:EyeAngles()
+	return self:GetNWAngle("angles") or self:RealEyeAngles()
+end
+
+function _R.Entity:GetPos()
+	return self:RealGetPos() or self:RealGetPos()
+end
+
+function _R.Entity:GetAngles()
+	return self:GetNWAngle("angles") or self:RealGetAngles()
+end
+
+function _R.Player:SetEyeAngles( ang)
 	
-	local data
-	self.PlayerTrace = util.TraceLine{ start = self:GetShootPos(), endpos = self:GetShootPos():Add(self:GetAimVector() * (16834)), filter = self}
-	self.LastPlayerTrace = CurTime()
-	self.LastTraceWasReal = real
-	self.LastTraceWasHax = hax
-	
-	return self.PlayerTrace
-end
-//Not sure if this is right
-function PLY:GetEyeTraceNoCursor()
-	return self:GetEyeTrace(true)
 end
 
-function PLY:GetShootPos()
-	if (self == nil) then return end
-	return self.view.origin
-end
+function _R.Entity:SetAngles( ang )
 
-function PLY:GetAimVector()
-	return self.view.angles:Forward()
 end

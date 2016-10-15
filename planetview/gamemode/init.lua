@@ -8,6 +8,7 @@ AddCSLuaFile( "specialchars.lua" )
 
 include( 'shared.lua' )
 include( 'specialchars.lua' )
+util.AddNetworkString( "View" )
  
 //User Authentication parsing
 function GM:PlayerAuthed( ply, stid, unid )
@@ -57,7 +58,8 @@ function GM:PlayerSpawn(ply)
 	ply:SetAllowWeaponsInVehicle( true )
 	
 	//Initial value so gmod can calm its tits
-	ply.view = {origin = ply:GetPos(), angles = Angle(90,0,0)}
+	ply:SetNWVector("origin", ply:RealGetPos())
+	ply:SetNWAngle("angles", Angle(0,0,0))
 	
 	//This entity is used to correct guns
 	if (IsValid(ply:GetNWEntity("pcam"))) then 
@@ -65,7 +67,7 @@ function GM:PlayerSpawn(ply)
 	end
 	local pcam = ents.Create("pcam")
 	if ( !IsValid( pcam ) ) then return end
-	pcam:SetPos(ply:GetPos())
+	pcam:SetPos(ply:RealGetPos())
 	pcam:SetOwner(ply)
 	pcam:Spawn()
 	ply:SetNWEntity("pcam", pcam)
@@ -73,13 +75,6 @@ function GM:PlayerSpawn(ply)
     ply:SetGravity( 0.00001 )  //depreciated use
     ply:SetWalkSpeed( 325 )  
 	ply:SetRunSpeed( 325 )
-	
-	//Allows us to fix the viewmodel
-	local oldhands = ply:GetHands();
-	if ( IsValid( oldhands ) ) then
-		oldhands:Remove()
-	end
-	//Needs a way of faking a new set of hands
 end
 
 --no gravity on props
@@ -87,3 +82,10 @@ local function Init_TriggerLogic()
 	physenv.SetGravity( Vector( 0, 0, 0 ) )
 end
 hook.Add( "InitPostEntity", "MapStartTrigger", Init_TriggerLogic )
+
+//Needed to sync shooting
+net.Receive( "View", function( len, ply )
+	//Store it for outside access
+	ply:SetNWVector("origin", net.ReadVector())
+	ply:SetNWAngle("angles", net.ReadAngle())
+end )
