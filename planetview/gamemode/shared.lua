@@ -62,7 +62,7 @@ local function Init_Gamemode()
 	CreateConVar("planetview_playerMass", 1)//how heavy is player
 	CreateConVar("planetview_playerGravRange", 16834)//how far does player search for a nearby planet
 	CreateConVar("planetview_view_enable", 0)//0 is disabled; 1 is enabled
-	CreateConVar("planetview_debug", 1)//prints messages and makes debugging models visable
+	CreateConVar("planetview_debug", 0)//prints messages and makes debugging models visable
 end
 hook.Add( "Initialize", "initializing", Init_Gamemode );
 
@@ -138,4 +138,28 @@ end
 
 function _R.Entity:SetAngles( ang )
 
+end
+
+/*//==================================================================================////
+									Connection Time
+*///==================================================================================////
+function _R.Player:GetPlayingTime()
+   return self:GetNetworkedInt("PlayingTime")
+end
+
+if SERVER then
+	function _R.Player:SavePlayingTime()
+		return self:SetPData("PlayingTime", self:GetPlayingTime() + self:TimeConnected())
+	end
+	/* LOADING AT PLAYER SPAWN */
+	function GM:PlayerInitialSpawn( ply )  // When spawning after joining the sever
+		if ply:GetPData("PlayingTime") != nil then
+			ply:SetNetworkedInt("PlayingTime", ply:GetPData("PlayingTime"))
+        end
+	end
+
+	/* SAVING AT DISCONNECT */
+	function GM:PlayerDisconnected( ply )
+		ply:SavePlayingTime()
+	end
 end

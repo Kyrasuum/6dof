@@ -2,6 +2,13 @@
 Just some protection for defining user groups
 */
 function CheckSpecialCharacters( ply )
+	//Check if guest based on play time
+	if ( ply:GetPlayingTime() < 1) then
+		pv_guest(ply)
+	else
+		pv_member(ply)
+	end
+	
 	//Architecht
 	if ( ply:SteamID() == "STEAM_0:0:0"  || ply:SteamID() == "STEAM_0:1:19289341" ) then
 		pv_owner(ply)
@@ -16,27 +23,37 @@ function CheckSpecialCharacters( ply )
 	//Include other steamid's with their permissions here
 end
 
+//Persmissions Functions
 function pv_guest( ply )
 	ply:SetTeam(2)
-	ply:PrintMessage( HUD_PRINTTALK, "[PlanetView]Welcome to the server, " .. ply:Nick() )
+	WelcomeMessage( ply )
 end 
 
 function pv_member( ply )
 	ply:SetTeam(3)
-	ply:PrintMessage( HUD_PRINTTALK, "Welcome back, " .. ply:Nick() .. "\nYou connected under the IP: " .. ply:IPAddress() )
+	ReturnMessage( ply )
 end 
 
 function pv_admin( ply )
 	ply:SetTeam(4)
-	ply:PrintMessage( HUD_PRINTTALK, "Welcome back, " .. ply:Nick() .. "\nYou connected under the IP: " .. ply:IPAddress() )
+	ReturnMessage( ply )
 end 
 
 function pv_superadmin( ply )
 	ply:SetTeam(5)
-	ply:PrintMessage( HUD_PRINTTALK, "Welcome back, " .. ply:Nick() .. "\nYou connected under the IP: " .. ply:IPAddress() )
+	ReturnMessage( ply )
 end 
 
 function pv_owner( ply )
 	ply:SetTeam(6)
-	ply:PrintMessage( HUD_PRINTTALK, "Welcome back, " .. ply:Nick() .. "\nYou connected under the IP: " .. ply:IPAddress() )
+	ReturnMessage( ply )
 end 
+
+//Server Join Messages
+function WelcomeMessage( ply )
+	ply:PrintMessage( HUD_PRINTTALK, "[PlanetView]Welcome to the server, " .. ply:Nick() )
+end
+
+function ReturnMessage( ply )
+	ply:PrintMessage( HUD_PRINTTALK, "Welcome back, " .. ply:Nick() .. "\nYou connected under the IP: " .. ply:IPAddress() )
+end

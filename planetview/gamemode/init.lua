@@ -22,19 +22,24 @@ end
 function GM:PlayerLoadout( ply )
 	ply:StripWeapons()
 	if (ply:Team() >= 2) then //Guest
+		/*
         ply:Give( "weapon_physcannon" )
 		ply:Give( "weapon_physgun" )
 		ply:Give( "gmod_tool" )
+		*/
     end
 	if (ply:Team() >= 3) then //Member
+		/*
 		ply:Give( "weapon_pistol" )
 		ply:Give( "weapon_smg1" )
 		ply:Give( "weapon_crowbar" )
 	 
 		ply:GiveAmmo( 999, "pistol" )
 		ply:GiveAmmo( 999, "smg1" )
+		*/
     end
 	if (ply:Team() >= 4) then //Admin+
+		/*
 		ply:Give( "weapon_frag" )
 		ply:Give( "weapon_crossbow" )
 		ply:Give( "weapon_shotgun" )
@@ -42,6 +47,7 @@ function GM:PlayerLoadout( ply )
 		ply:Give( "weapon_rpg" )
 		ply:Give( "weapon_ar2" )
 	    ply:Give( "gmod_camera" )
+		*/
     end
 end
 
@@ -61,6 +67,7 @@ function GM:PlayerSpawn(ply)
 	ply:SetNWVector("origin", ply:RealGetPos())
 	ply:SetNWAngle("angles", Angle(0,0,0))
 	
+	/*Disabled until further notice//
 	//This entity is used to correct guns
 	if (IsValid(ply:GetNWEntity("pcam"))) then 
 		ply:GetNWEntity("pcam"):Remove() 
@@ -71,6 +78,7 @@ function GM:PlayerSpawn(ply)
 	pcam:SetOwner(ply)
 	pcam:Spawn()
 	ply:SetNWEntity("pcam", pcam)
+	*/
 
     ply:SetGravity( 0.00001 )  //depreciated use
     ply:SetWalkSpeed( 325 )  
@@ -89,3 +97,104 @@ net.Receive( "View", function( len, ply )
 	ply:SetNWVector("origin", net.ReadVector())
 	ply:SetNWAngle("angles", net.ReadAngle())
 end )
+
+/*//==================================================================================////
+								Whitelisting is done here
+*///==================================================================================////
+//Tables of whitelisted items
+local models = {}
+local effect = {}
+local npcs = {}
+local ragdolls = {}
+local vehicle = {}
+local weapon = {}
+local sent = {}
+
+//Props
+function GM:PlayerSpawnProp( ply, mdl )
+	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	for _, v in pairs( models ) do
+		if string.find( mdl, v ) then
+			return true//The model is whitelisted
+		end
+	end
+	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
+	return false//You cant spawn this
+end
+//Effects
+function GM:PlayerSpawnEffect( ply, mdl )
+	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	for _, v in pairs( effect ) do
+		if string.find( mdl, v ) then
+			return true//The model is whitelisted
+		end
+	end
+	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
+	return false//You cant spawn this
+end
+//NPCS
+function GM:PlayerSpawnNPC( ply, npc, weapon )
+	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	for _, v in pairs( npcs ) do
+		if string.find( npc, v ) then
+			return true//The model is whitelisted
+		end
+	end
+	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. npc);
+	return false//You cant spawn this
+end
+//Ragdolls
+function GM:PlayerSpawnRagdoll( ply, mdl, ent )
+	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	for _, v in pairs( ragdolls ) do
+		if string.find( mdl, v ) then
+			return true//The model is whitelisted
+		end
+	end
+	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
+	return false//You cant spawn this
+end
+//Vehicles
+function GM:PlayerSpawnVehicle( ply, mdl, name, tab )
+	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	for _, v in pairs( vehicle ) do
+		if string.find( mdl, v ) then
+			return true//The model is whitelisted
+		end
+	end
+	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
+	return false//You cant spawn this
+end
+//SWEPs
+function GM:PlayerGiveSWEP( ply, wep, tab )
+	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	for _, v in pairs( weapon ) do
+		if string.find( wep, v ) then
+			return true//The model is whitelisted
+		end
+	end
+	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. wep);
+	return false//You cant spawn this
+end
+
+function GM:PlayerSpawnSWEP( ply, wep, tab )
+	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	for _, v in pairs( weapon ) do
+		if string.find( mdl, v ) then
+			return true//The model is whitelisted
+		end
+	end
+	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
+	return false//You cant spawn this
+end
+//SENTs
+function GM:PlayerSpawnSENT( ply , mdl )
+	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	for _, v in pairs( sent ) do
+		if string.find( mdl, v ) then
+			return true//The model is whitelisted
+		end
+	end
+	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
+	return false//You cant spawn this
+end

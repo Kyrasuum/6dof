@@ -1,0 +1,21 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models/mark2580/weapons/w_physcannon/w_physcannon_sheet2"
+	"$bumpmap"     "models/mark2580/weapons/w_physcannon/w_physcannon_n"
+
+        "$detail"      "models/mark2580/weapons/w_physcannon/w_physcannon_sheet2_detail"
+ 	"$detailscale"                   "1"
+ 	"$detailblendfactor"             "0.6"
+	"$detailblendmode"               "0"
+
+        "$rimlight"                      "1"
+        "$rimlightexponent"              "6"
+	"$rimlightboost"                 ".2"	
+
+	"$selfillum"                     "1"
+
+	"$phong"               "1"
+	"$phongboost"	       "0"
+	"$phongexponent"       "10"
+	"$phongfresnelranges"  "[.05 .05 .05]"
+}

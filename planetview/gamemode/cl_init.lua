@@ -83,31 +83,29 @@ end
 //Rotates plys 3d model
 //Calculates the plys View (Does not rotate)
 //Inputs the new ground object
-local function CalcView(ply, Origin, Angles, FieldOfView)
+function GM:CalcView(ply, Origin, Angles, FieldOfView)
 	local View = {}
-	View.origin = Origin
-	View.angles = Angles
-	View.fov = FieldOfView
-	//Calc Variables
-	local PlanetPos = GetPlanetPos(ply:RealGetPos())
-	local LocalPos = (ply:RealGetPos()-PlanetPos)
-	local LocalPos = (ply:RealGetPos()-PlanetPos)
-	local RollAng = Vector(-LocalPos.y,math.abs(LocalPos.z),0):AngleEx(Vector(0,0,0)).y -90
-	local PitchAng = Vector(-LocalPos.x,LocalPos.z,0):AngleEx(Vector(0,0,0)).y -90
-	local PosAng = Angle(PitchAng,0,-RollAng)
-	local EyeAng = ply:RealEyeAngles()
-	local _,CorrecAng = LocalToWorld(Origin,Angle(0,EyeAng.y,0),Origin,PosAng)
-		
-	--ply View
-	local NewOrigin = ply:RealGetPos()+CorrecAng:Up()*61
-	local _,NewAng = LocalToWorld(Origin,Angle(EyeAng.p,0,0),Origin,CorrecAng)
-		
+	//Only change things if enabled
 	if (GetConVar("planetview_view_enable"):GetInt() == 1)then
+		//Calc Variables
+		local PlanetPos = GetPlanetPos(ply:RealGetPos())
+		local LocalPos = (ply:RealGetPos()-PlanetPos)
+		local LocalPos = (ply:RealGetPos()-PlanetPos)
+		local RollAng = Vector(-LocalPos.y,math.abs(LocalPos.z),0):AngleEx(Vector(0,0,0)).y -90
+		local PitchAng = Vector(-LocalPos.x,LocalPos.z,0):AngleEx(Vector(0,0,0)).y -90
+		local PosAng = Angle(PitchAng,0,-RollAng)
+		local EyeAng = ply:RealEyeAngles()
+		local _,CorrecAng = LocalToWorld(Origin,Angle(0,EyeAng.y,0),Origin,PosAng)
+			
+		--ply View
+		local _,NewAng = LocalToWorld(Origin,Angle(EyeAng.p,0,0),Origin,CorrecAng)
+		local Origin = ply:RealGetPos()+CorrecAng:Up()*61
+		
 		ply:SetAllowFullRotation(true)
 		ply:SetAngles( CorrecAng )
 		//Find our ground
 		trace = util.TraceLine( {
-			start = NewOrigin + PlanetPos,
+			start = Origin + PlanetPos,
 			endpos = PlanetPos,
 			mask = MASK_ALL,
 			filter = ply
@@ -118,19 +116,18 @@ local function CalcView(ply, Origin, Angles, FieldOfView)
 		else
 			//No Ground
 		end
-		--putting everything back in
-		View.origin = NewOrigin
-		View.angles = NewAng
-		View.fov = FieldOfView
-		//Quicker than server update (visual only)
-		ply:SetNWVector("origin", NewOrigin)
-		ply:SetNWAngle("angles", NewAng)
-		//Syncing server
-		net.Start( "View" )
-			net.WriteVector( NewOrigin )
-			net.WriteAngle( NewAng )
-		net.SendToServer()
 	end
+	--putting everything back in
+	View.origin = Origin
+	View.angles = Angles
+	View.fov = FieldOfView
+	//Quicker than server update (visual only)
+	ply:SetNWVector("origin", Origin)
+	ply:SetNWAngle("angles", Angles)
+	//Syncing server
+	net.Start( "View" )
+		net.WriteVector( Origin )
+		net.WriteAngle( Angles )
+	net.SendToServer()
 	return View
 end
-hook.Add("CalcView", "CalcView", CalcView)

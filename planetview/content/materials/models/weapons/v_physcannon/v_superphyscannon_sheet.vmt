@@ -1,0 +1,26 @@
+"VertexlitGeneric"
+{
+	"$basetexture"          "models/weapons/v_physcannon/v_superphyscannon_sheet"
+	"$bumpmap"              "models/mark2580/weapons/w_physcannon/w_physcannon_n"
+	"$detail"               "models/mark2580/weapons/w_physcannon/w_physcannon_sheet1_detail"
+	"$lightwarptexture"	"models/mark2580/weapons/w_physcannon/lightwarp_soft_white"
+
+ 	"$detailscale"          "1"
+ 	"$detailblendfactor"    "0.3"
+	"$detailblendmode"      "0"
+
+	"$selfillum"            "1"
+
+	"$phong"                "1"
+	"$phongboost"	        "1"
+	"$phongexponent"        "150"
+	"$phongfresnelranges"   "[.01 .01 .01]"
+
+	Proxies
+	{
+		PlayerWeaponColor
+		{
+			resultVar	$selfillumtint
+		}
+	}
+}
