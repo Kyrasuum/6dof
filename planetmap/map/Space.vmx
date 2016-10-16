@@ -2,7 +2,7 @@ versioninfo
 {
 	"editorversion" "400"
 	"editorbuild" "7252"
-	"mapversion" "271"
+	"mapversion" "272"
 	"formatversion" "100"
 	"prefab" "0"
 }
@@ -20,13 +20,13 @@ viewsettings
 world
 {
 	"id" "1"
-	"mapversion" "271"
+	"mapversion" "272"
 	"classname" "worldspawn"
 	"coldworld" "0"
 	"detailmaterial" "detail/detailsprites"
 	"detailvbsp" "detail.vbsp"
 	"maxpropscreenwidth" "-1"
-	"skyname" "sky_day01_01"
+	"skyname" "sky_skylab_01"
 	solid
 	{
 		"id" "6001"

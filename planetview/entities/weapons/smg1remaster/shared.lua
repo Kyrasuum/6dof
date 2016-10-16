@@ -2,8 +2,12 @@
 Created with buu342s Swep Creator
 ---------------------------------*/
 
-SWEP.PrintName = "SMG"
-SWEP.Category = "PlanetView"
+SWEP.PrintName 		= "SMG"
+SWEP.Category 		= "PlanetView"
+SWEP.Author			= ""
+SWEP.Contact		= ""
+SWEP.Purpose		= ""
+SWEP.Instructions	= ""
 
 SWEP.Spawnable= true
 SWEP.AdminSpawnable= true

@@ -1,13 +1,16 @@
+SWEP.Base 					= "weapon_base"
 SWEP.Spawnable				= true
 SWEP.AdminSpawnable			= true
 SWEP.ViewModel				= "models/weapons/c_physcannon.mdl"
 SWEP.WorldModel				= "models/weapons/w_physics.mdl"
 SWEP.UseHands 				= true
 SWEP.ViewModelFlip			= false
+SWEP.ViewModelFOV 			= 50
 SWEP.Weight 				= 42
 SWEP.AutoSwitchTo 			= true
 SWEP.AutoSwitchFrom 		= true
 SWEP.HoldType				= "physgun"
+SWEP.FiresUnderwater 		= true
 	
 SWEP.PuntForce				= 300000 -- 80000
 SWEP.PullForce				= 10000
@@ -27,7 +30,11 @@ SWEP.Secondary.Automatic	= true
 SWEP.Secondary.Ammo			= ""
 
 SWEP.PrintName				= "Gravity Gun"
-SWEP.Category = "PlanetView"
+SWEP.Category 				= "PlanetView"
+SWEP.Author					= ""
+SWEP.Contact				= ""
+SWEP.Purpose				= ""
+SWEP.Instructions			= ""
 SWEP.Slot					= 1
 SWEP.SlotPos				= 9
 

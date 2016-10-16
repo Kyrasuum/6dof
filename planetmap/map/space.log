@@ -13344,3 +13344,129 @@ Level flags = 0
 Total triangle count: 1245
 Writing c:\users\plore\desktop\util\games\gmod\gamemode\planetview\planetmap\map\Space.bsp
 2 seconds elapsed
+
+
+
+materialPath: E:\Steamlibrary\SteamApps\common\GarrysMod\garrysmod\materials
+Loading C:\Users\plore\Desktop\Util\Games\Gmod\gamemode\planetview\planetmap\map\Space.vmf
+Could not locate 'GameData' key in e:\steamlibrary\steamapps\common\garrysmod\garrysmod\gameinfo.txt
+fixing up env_cubemap materials on brush sides...
+0...1...2...3...4...5...6...7...8...9...100...1...2...3...4...5...6...7...8...9...10Processing areas...done (0)
+Building Faces...done (0)
+Chop Details...done (0)
+Find Visible Detail Sides...done (0)
+Merging details...done (0)
+FixTjuncs...
+PruneNodes...
+WriteBSP...
+done (0)
+writing C:\Users\plore\Desktop\Util\Games\Gmod\gamemode\planetview\planetmap\map\Space.prt...Building visibility clusters...
+done (0)
+material "skybox/sky_skylab_01rt" not found.
+Can't load skybox file skybox/sky_skylab_01 to build the default cubemap!
+Can't load skybox file skybox/sky_skylab_01 to build the default cubemap!
+Finding displacement neighbors...
+Finding lightmap sample positions...
+Displacement Alpha : 0...1...2...3...4...5...6...7...8...9...10
+Building Physics collision data...
+done (0) (15682 bytes)
+Placing detail props : 0...1...2...3...4...5...6...7...8...9...10
+Compacting texture/material tables...
+Reduced 12 texinfos to 6
+Reduced 4 texdatas to 4 (79 bytes to 79)
+Writing C:\Users\plore\Desktop\Util\Games\Gmod\gamemode\planetview\planetmap\map\Space.bsp
+0 seconds elapsed
+
+
+
+8 threads
+reading c:\users\plore\desktop\util\games\gmod\gamemode\planetview\planetmap\map\Space.bsp
+reading c:\users\plore\desktop\util\games\gmod\gamemode\planetview\planetmap\map\Space.prt
+  65 portalclusters
+ 112 numportals
+0...1...2...3...4...5...6...7...8...9...100...1...2...3...4...5...6...7...8...9...10Optimized: 0 visible clusters (0.00%)
+Total clusters visible: 4097
+Average clusters visible: 63
+Building PAS...
+Average clusters audible: 63
+visdatasize:1682  compressed from 2080
+writing c:\users\plore\desktop\util\games\gmod\gamemode\planetview\planetmap\map\Space.bsp
+0 seconds elapsed
+
+
+
+[Reading texlights from 'lights.rad']
+[45 texlights parsed from 'lights.rad']
+
+Loading c:\users\plore\desktop\util\games\gmod\gamemode\planetview\planetmap\map\Space.bsp
+458 faces
+4718957 square feet [679529856.00 square inches]
+0 Displacements
+0 Square Feet [0.00 Square Inches]
+458 patches before subdivision
+11880 patches after subdivision
+can't solve quadratic for light 1696.000000 1696.000000
+can't solve quadratic for light 9000.000000 9000.000000
+3 direct lights
+0...1...2...3...4...5...6...7...8...9...100...1...2...3...4...5...6...7...8...9...10transfers 9396, max 68
+transfer lists:   0.1 megs
+0...1...2...3...4...5...6...7...8...9...10	Bounce #1 added RGB(0, 0, 0)
+Build Patch/Sample Hash Table(s).....Done<0.0026 sec>
+0...1...2...3...4...5...6...7...8...9...10FinalLightFace Done
+0 of 0 (0% of) surface lights went in leaf ambient cubes.
+0...1...2...3...4...5...6...7...8...9...10Writing leaf ambient...done
+Ready to Finish
+
+Object names       Objects/Maxobjs  Memory / Maxmem  Fullness 
+------------       ---------------  ---------------  -------- 
+models                   1/1024           48/49152    ( 0.1%) 
+brushes                 13/8192          156/98304    ( 0.2%) 
+brushsides             313/65536        2504/524288   ( 0.5%) 
+planes                 548/65536       10960/1310720  ( 0.8%) 
+vertexes               613/65536        7356/786432   ( 0.9%) 
+nodes                  353/65536       11296/2097152  ( 0.5%) 
+texinfos                 6/12288         432/884736   ( 0.0%) 
+texdata                  4/2048          128/65536    ( 0.2%) 
+dispinfos                0/0               0/0        ( 0.0%) 
+disp_verts               0/0               0/0        ( 0.0%) 
+disp_tris                0/0               0/0        ( 0.0%) 
+disp_lmsamples           0/0               0/0        ( 0.0%) 
+faces                  458/65536       25648/3670016  ( 0.7%) 
+hdr faces                0/65536           0/3670016  ( 0.0%) 
+origfaces              156/65536        8736/3670016  ( 0.2%) 
+leaves                 355/65536       11360/2097152  ( 0.5%) 
+leaffaces              564/65536        1128/131072   ( 0.9%) 
+leafbrushes            308/65536         616/131072   ( 0.5%) 
+areas                    3/256            24/2048     ( 1.2%) 
+surfedges             3019/512000      12076/2048000  ( 0.6%) 
+edges                 1524/256000       6096/1024000  ( 0.6%) 
+LDR worldlights          3/8192          264/720896   ( 0.0%) 
+HDR worldlights          0/8192            0/720896   ( 0.0%) 
+leafwaterdata            0/32768           0/393216   ( 0.0%) 
+waterstrips             14/32768         140/327680   ( 0.0%) 
+waterverts               0/65536           0/786432   ( 0.0%) 
+waterindices           189/65536         378/131072   ( 0.3%) 
+cubemapsamples           0/1024            0/16384    ( 0.0%) 
+overlays                 0/512             0/180224   ( 0.0%) 
+LDR lightdata         [variable]      443904/0        ( 0.0%) 
+HDR lightdata         [variable]           0/0        ( 0.0%) 
+visdata               [variable]        1682/16777216 ( 0.0%) 
+entdata               [variable]        2116/393216   ( 0.5%) 
+LDR ambient table      355/65536        1420/262144   ( 0.5%) 
+HDR ambient table      355/65536        1420/262144   ( 0.5%) 
+LDR leaf ambient       128/65536        3584/1835008  ( 0.2%) 
+HDR leaf ambient       355/65536        9940/1835008  ( 0.5%) 
+occluders                0/0               0/0        ( 0.0%) 
+occluder polygons        0/0               0/0        ( 0.0%) 
+occluder vert ind        0/0               0/0        ( 0.0%) 
+detail props          [variable]           1/12       ( 8.3%) 
+static props          [variable]           1/12       ( 8.3%) 
+pakfile               [variable]          54/0        ( 0.0%) 
+physics               [variable]       15682/4194304  ( 0.4%) 
+physics terrain       [variable]           2/1048576  ( 0.0%) 
+
+Level flags = 0
+
+Total triangle count: 1233
+Writing c:\users\plore\desktop\util\games\gmod\gamemode\planetview\planetmap\map\Space.bsp
+2 seconds elapsed

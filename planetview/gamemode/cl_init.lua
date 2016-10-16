@@ -68,17 +68,56 @@ function GM:PreDrawViewModel(vm, weap)
 	end
 end
 
+local function CalcRotation( ply, Origin, EyeAng )
+	//Checking values
+	if (!IsValid(ply)) then return end
+	if (!IsValid(Origin)) then Origin = ply:RealEyePos() end
+	if (!IsValid(EyeAng)) then EyeAng = ply:RealEyeAngles() end
+
+	//Calc Variables
+	local PlanetPos = GetPlanetPos(ply:RealGetPos())
+	local LocalPos = (ply:RealGetPos()-PlanetPos)
+	local LocalPos = (ply:RealGetPos()-PlanetPos)
+	local RollAng = Vector(-LocalPos.y,math.abs(LocalPos.z),0):AngleEx(Vector(0,0,0)).y -90
+	local PitchAng = Vector(-LocalPos.x,LocalPos.z,0):AngleEx(Vector(0,0,0)).y -90
+	local PosAng = Angle(PitchAng,0,-RollAng)
+	local _,CorrecAng = LocalToWorld(Origin,Angle(0,EyeAng.y,0),Origin,PosAng)
+		
+	//Output
+	local _,Angles = LocalToWorld(Origin,Angle(EyeAng.p,0,0),Origin,CorrecAng)
+	local Origin = ply:RealGetPos()+CorrecAng:Up()*61
+	
+	return Angles, Origin, CorrecAng //New Eye Angles, New Eye Pos, New Normal
+end
+
 //Adjusts Viewmodel
 function GM:CalcViewModelView( wep, vm, oldPos, oldAng, pos, ang )
+	if ( !IsValid( wep ) ) then return end
 	ply = LocalPlayer()
+	local vm_origin, vm_angles = pos, ang
 	if (ply != nil) then
 		if(GetConVar("planetview_view_enable"):GetInt() == 1) then 
-			//Edit viewmodel here	
-			pos = ply:GetNWVector("origin") 
-			ang = ply:GetNWAngle("angles")
+			//Edit viewmodel here
+			vm_angles, vm_origin,_ = CalcRotation( ply, vm_origin, vm_angles )
 		end
 	end
-	return pos, ang
+
+	-- Controls the position of all viewmodels
+	local func = wep.GetViewModelPosition
+	if ( func ) then
+		local Rpos, Rang = func( wep, vm_origin*1, vm_angles*1 )
+		vm_origin = Rpos or vm_origin
+		vm_angles = Rang or vm_angles
+	end
+
+	-- Controls the position of individual viewmodels
+	func = wep.CalcViewModelView
+	if ( func ) then
+		local Rpos, Rang = func( wep, vm, vm_origin*1, vm_angles*1, vm_origin*1, vm_angles*1 )
+		vm_origin = Rpos or vm_origin
+		vm_angles = Rang or vm_angles
+	end
+	return vm_origin, vm_angles
 end
 //Rotates plys 3d model
 //Calculates the plys View (Does not rotate)
@@ -87,19 +126,9 @@ function GM:CalcView(ply, Origin, Angles, FieldOfView)
 	local View = {}
 	//Only change things if enabled
 	if (GetConVar("planetview_view_enable"):GetInt() == 1)then
-		//Calc Variables
+		
 		local PlanetPos = GetPlanetPos(ply:RealGetPos())
-		local LocalPos = (ply:RealGetPos()-PlanetPos)
-		local LocalPos = (ply:RealGetPos()-PlanetPos)
-		local RollAng = Vector(-LocalPos.y,math.abs(LocalPos.z),0):AngleEx(Vector(0,0,0)).y -90
-		local PitchAng = Vector(-LocalPos.x,LocalPos.z,0):AngleEx(Vector(0,0,0)).y -90
-		local PosAng = Angle(PitchAng,0,-RollAng)
-		local EyeAng = ply:RealEyeAngles()
-		local _,CorrecAng = LocalToWorld(Origin,Angle(0,EyeAng.y,0),Origin,PosAng)
-			
-		--ply View
-		local _,NewAng = LocalToWorld(Origin,Angle(EyeAng.p,0,0),Origin,CorrecAng)
-		local Origin = ply:RealGetPos()+CorrecAng:Up()*61
+		Angles, Origin, CorrecAng = CalcRotation( ply )
 		
 		ply:SetAllowFullRotation(true)
 		ply:SetAngles( CorrecAng )
@@ -121,9 +150,11 @@ function GM:CalcView(ply, Origin, Angles, FieldOfView)
 	View.origin = Origin
 	View.angles = Angles
 	View.fov = FieldOfView
+	
+	//Disabled for now
 	//Quicker than server update (visual only)
-	ply:SetNWVector("origin", Origin)
-	ply:SetNWAngle("angles", Angles)
+	//ply:SetNWVector("origin", Origin)
+	//ply:SetNWAngle("angles", Angles)
 	//Syncing server
 	net.Start( "View" )
 		net.WriteVector( Origin )

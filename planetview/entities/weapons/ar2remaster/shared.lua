@@ -2,8 +2,12 @@
 Created with buu342s Swep Creator
 ---------------------------------*/
 
-SWEP.PrintName = "AR2 (Combine Pulse Rifle)"
-SWEP.Category = "PlanetView"
+SWEP.PrintName 		= "AR2 (Combine Pulse Rifle)"
+SWEP.Category 		= "PlanetView"
+SWEP.Author			= ""
+SWEP.Contact		= ""
+SWEP.Purpose		= ""
+SWEP.Instructions	= ""
 
 SWEP.Spawnable= true
 SWEP.AdminSpawnable= true
