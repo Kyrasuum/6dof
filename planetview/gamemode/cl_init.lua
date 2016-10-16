@@ -5,7 +5,9 @@ This is a good place to make edits to individual clients
 */
 include( "shared.lua" )
 
+//--------------------------------------------------------------------------
 //Joining Dialog
+//--------------------------------------------------------------------------
 function set_team() 
 	Ready = vgui.Create( "DFrame" )
 	local width = 175
@@ -28,8 +30,9 @@ function set_team()
 	end
 end
 concommand.Add( "sb_start", set_team )
-
+//--------------------------------------------------------------------------
 //Create debug bounding box
+//--------------------------------------------------------------------------
 function GM:PreDrawViewModel(vm, weap)
 	local ply = LocalPlayer()
 	if(GetConVar("planetview_debug"):GetInt() == 1) then 
@@ -67,7 +70,9 @@ function GM:PreDrawViewModel(vm, weap)
 		render.DrawBeam(aba, abb,3,0,0, Color(255,255,255,255))
 	end
 end
-
+//--------------------------------------------------------------------------
+//Library functions for rotating players view
+//--------------------------------------------------------------------------
 local function CalcRotation( ply, Origin, EyeAng )
 	//Checking values
 	if (!IsValid(ply)) then return end
@@ -90,13 +95,18 @@ local function CalcRotation( ply, Origin, EyeAng )
 	return Angles, Origin, CorrecAng //New Eye Angles, New Eye Pos, New Normal
 end
 
+//--------------------------------------------------------------------------
 //Adjusts Viewmodel
+//--------------------------------------------------------------------------
 function GM:CalcViewModelView( wep, vm, oldPos, oldAng, pos, ang )
 	if ( !IsValid( wep ) ) then return end
 	ply = LocalPlayer()
 	local vm_origin, vm_angles = pos, ang
+	
+	// Planetview adjustment
 	if (ply != nil) then
-		if(GetConVar("planetview_view_enable"):GetInt() == 1) then 
+		//Only change things if enabled and viewing from player
+		if(GetConVar("planetview_view_enable"):GetInt() == 1 && ply:GetViewEntity() == ply) then 
 			//Edit viewmodel here
 			vm_angles, vm_origin,_ = CalcRotation( ply, vm_origin, vm_angles )
 		end
@@ -119,19 +129,21 @@ function GM:CalcViewModelView( wep, vm, oldPos, oldAng, pos, ang )
 	end
 	return vm_origin, vm_angles
 end
-//Rotates plys 3d model
-//Calculates the plys View (Does not rotate)
-//Inputs the new ground object
+//--------------------------------------------------------------------------
+//Rotates players 3d model and view
+//Inputs the new ground object (not effective yet)
+//--------------------------------------------------------------------------
 function GM:CalcView(ply, Origin, Angles, FieldOfView)
 	local View = {}
-	//Only change things if enabled
-	if (GetConVar("planetview_view_enable"):GetInt() == 1)then
+	//Only change things if enabled and viewing from player
+	if (GetConVar("planetview_view_enable"):GetInt() == 1  && ply:GetViewEntity() == ply)then
 		
 		local PlanetPos = GetPlanetPos(ply:RealGetPos())
 		Angles, Origin, CorrecAng = CalcRotation( ply )
 		
 		ply:SetAllowFullRotation(true)
 		ply:SetAngles( CorrecAng )
+		
 		//Find our ground
 		trace = util.TraceLine( {
 			start = Origin + PlanetPos,
@@ -151,10 +163,11 @@ function GM:CalcView(ply, Origin, Angles, FieldOfView)
 	View.angles = Angles
 	View.fov = FieldOfView
 	
-	//Disabled for now
-	//Quicker than server update (visual only)
-	//ply:SetNWVector("origin", Origin)
-	//ply:SetNWAngle("angles", Angles)
+	//Not neccesary anymore
+	////Quicker than server update (visual only)
+	////ply:SetNWVector("origin", Origin)
+	////ply:SetNWAngle("angles", Angles)
+	
 	//Syncing server
 	net.Start( "View" )
 		net.WriteVector( Origin )

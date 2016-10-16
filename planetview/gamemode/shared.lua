@@ -113,7 +113,7 @@ function _R.Player:GetShootPos()
 end
 
 function _R.Player:GetAimVector()
-	return self:GetNWAngle("angles"):Forward()
+	return self:GetNWAngle("angles"):Forward() or self:RealGetAimVector()
 end
 
 function _R.Entity:EyePos()

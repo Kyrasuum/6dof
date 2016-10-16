@@ -57,46 +57,55 @@ SWEP.Secondary.Automatic = false
 SWEP.Secondary.Ammo = "none"
 
 function SWEP:Initialize()
-util.PrecacheSound(self.Primary.Sound) 
-util.PrecacheSound(self.ReloadSound) 
-        self:SetWeaponHoldType( self.HoldType )
+	util.PrecacheSound(self.Primary.Sound) 
+	util.PrecacheSound(self.ReloadSound) 
+    self:SetWeaponHoldType( self.HoldType )
 end 
 
 function SWEP:PrimaryAttack()
- 
-if ( !self:CanPrimaryAttack() ) then return end
- 
-local bullet = {} 
-bullet.Num = self.Primary.NumberofShots 
-bullet.Src = self.Owner:GetShootPos() 
-bullet.Dir = self.Owner:GetAimVector() 
-bullet.Spread = Vector( self.Primary.Spread * 0.1 , self.Primary.Spread * 0.1, 0)
-bullet.Tracer = 0 
-bullet.Force = self.Primary.Force 
-bullet.Damage = self.Primary.Damage 
-bullet.AmmoType = self.Primary.Ammo 
- 
-local rnda = self.Primary.Recoil * -1 
-local rndb = self.Primary.Recoil * math.random(-1, 1) 
- 
-self:ShootEffects()
- 
-self.Owner:FireBullets( bullet ) 
-self:EmitSound(Sound(self.Primary.Sound)) 
-self.Owner:ViewPunch( Angle( rnda,rndb,rnda ) ) 
-self:TakePrimaryAmmo(self.Primary.TakeAmmo) 
- 
-self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
-self:SetNextSecondaryFire( CurTime() + self.Primary.Delay ) 
+	if ( !self:CanPrimaryAttack() ) then return end
+	 
+	local bullet = {} 
+	bullet.Num = self.Primary.NumberofShots 
+	bullet.Src = self.Owner:GetShootPos() 
+	bullet.Dir = self.Owner:GetAimVector() 
+	bullet.Spread = Vector( self.Primary.Spread * 0.1 , self.Primary.Spread * 0.1, 0)
+	bullet.Tracer = 0 
+	bullet.Force = self.Primary.Force 
+	bullet.Damage = self.Primary.Damage 
+	bullet.AmmoType = self.Primary.Ammo 
+	 
+	local rnda = self.Primary.Recoil * -1 
+	local rndb = self.Primary.Recoil * math.random(-1, 1) 
+	 
+	self:ShootEffects()
+	 
+	self.Owner:FireBullets( bullet ) 
+	self:EmitSound(Sound(self.Primary.Sound)) 
+	self.Owner:ViewPunch( Angle( rnda,rndb,rnda ) ) 
+	self:TakePrimaryAmmo(self.Primary.TakeAmmo) 
+	 
+	self:SetNextPrimaryFire( CurTime() + self.Primary.Delay )
+	self:SetNextSecondaryFire( CurTime() + self.Primary.Delay ) 
 end 
 
-function SWEP:SecondaryAttack()
+function SWEP:Reload()
+	self:SetIronsights( false )
+ 
+	// Already reloading
+	if self.ReloadingTime and CurTime() <= self.ReloadingTime then return end
+ 
+	// Start reloading if we can
+	if ( self:Clip1() < self.Primary.ClipSize && self.Owner:GetAmmoCount( self.Primary.Ammo ) > 0 ) then
+		self:DefaultReload( ACT_VM_RELOAD )
+		self:EmitSound(Sound(self.ReloadSound)) 
+		local AnimationTime = self.Owner:GetViewModel():SequenceDuration()
+		self.ReloadingTime = CurTime() + AnimationTime
+		self:SetNextPrimaryFire(CurTime() + AnimationTime)
+		self:SetNextSecondaryFire(CurTime() + AnimationTime)
+	end
 end
 
-function SWEP:Reload()
-self:EmitSound(Sound(self.ReloadSound)) 
-        self.Weapon:DefaultReload( ACT_VM_RELOAD );
-end
 
 local IRONSIGHT_TIME = 0.25
 
