@@ -1,15 +1,19 @@
 /*
 Joining Dialog is created here
+Collision handler is here
 This File handles the calcview and viewmodel hooks
 This is a good place to make edits to individual clients
 */
 include( "shared.lua" )
 
+//helmet hud
+include( "VisorHud.lua" )
+
 //--------------------------------------------------------------------------
 //Joining Dialog
 //--------------------------------------------------------------------------
 function set_team() 
-	Ready = vgui.Create( "DFrame" )
+	local Ready = vgui.Create( "DFrame" )
 	local width = 175
 	local height = 75
 	Ready:SetPos( (ScrW() - width) / 2, (ScrH() - height) / 2 )
@@ -35,7 +39,7 @@ concommand.Add( "sb_start", set_team )
 //--------------------------------------------------------------------------
 function GM:PreDrawViewModel(vm, weap)
 	local ply = LocalPlayer()
-	if(GetConVar("planetview_debug"):GetInt() == 1) then 
+	if(GetConVar( "planetview_debug" ):GetInt() == 1) then 
 		local min, max = ply:WorldSpaceAABB()
 			
 		//Axis-Oriented Bounding box
@@ -70,45 +74,21 @@ function GM:PreDrawViewModel(vm, weap)
 		render.DrawBeam(aba, abb,3,0,0, Color(255,255,255,255))
 	end
 end
-//--------------------------------------------------------------------------
-//Library functions for rotating players view
-//--------------------------------------------------------------------------
-local function CalcRotation( ply, Origin, EyeAng )
-	//Checking values
-	if (!IsValid(ply)) then return end
-	if (!IsValid(Origin)) then Origin = ply:RealEyePos() end
-	if (!IsValid(EyeAng)) then EyeAng = ply:RealEyeAngles() end
-
-	//Calc Variables
-	local PlanetPos = GetPlanetPos(ply:RealGetPos())
-	local LocalPos = (ply:RealGetPos()-PlanetPos)
-	local LocalPos = (ply:RealGetPos()-PlanetPos)
-	local RollAng = Vector(-LocalPos.y,math.abs(LocalPos.z),0):AngleEx(Vector(0,0,0)).y -90
-	local PitchAng = Vector(-LocalPos.x,LocalPos.z,0):AngleEx(Vector(0,0,0)).y -90
-	local PosAng = Angle(PitchAng,0,-RollAng)
-	local _,CorrecAng = LocalToWorld(Origin,Angle(0,EyeAng.y,0),Origin,PosAng)
-		
-	//Output
-	local _,Angles = LocalToWorld(Origin,Angle(EyeAng.p,0,0),Origin,CorrecAng)
-	local Origin = ply:RealGetPos()+CorrecAng:Up()*61
-	
-	return Angles, Origin, CorrecAng //New Eye Angles, New Eye Pos, New Normal
-end
 
 //--------------------------------------------------------------------------
 //Adjusts Viewmodel
 //--------------------------------------------------------------------------
 function GM:CalcViewModelView( wep, vm, oldPos, oldAng, pos, ang )
 	if ( !IsValid( wep ) ) then return end
-	ply = LocalPlayer()
+	local ply = LocalPlayer()
 	local vm_origin, vm_angles = pos, ang
 	
 	// Planetview adjustment
 	if (ply != nil) then
 		//Only change things if enabled and viewing from player
-		if(GetConVar("planetview_view_enable"):GetInt() == 1 && ply:GetViewEntity() == ply) then 
+		if( ply:GetMoveType() != MOVETYPE_NOCLIP && ply:GetViewEntity() == ply ) then 
 			//Edit viewmodel here
-			vm_angles, vm_origin,_ = CalcRotation( ply, vm_origin, vm_angles )
+			vm_angles, vm_origin = CalcRotation( ply, vm_origin, vm_angles )
 		end
 	end
 
@@ -135,43 +115,135 @@ end
 //--------------------------------------------------------------------------
 function GM:CalcView(ply, Origin, Angles, FieldOfView)
 	local View = {}
-	//Only change things if enabled and viewing from player
-	if (GetConVar("planetview_view_enable"):GetInt() == 1  && ply:GetViewEntity() == ply)then
-		
-		local PlanetPos = GetPlanetPos(ply:RealGetPos())
-		Angles, Origin, CorrecAng = CalcRotation( ply )
-		
-		ply:SetAllowFullRotation(true)
-		ply:SetAngles( CorrecAng )
-		
-		//Find our ground
-		trace = util.TraceLine( {
-			start = Origin + PlanetPos,
-			endpos = PlanetPos,
-			mask = MASK_ALL,
-			filter = ply
-		} )
 
-		if ( trace.Hit ) then
-			ply:SetGroundEntity( world )			
-		else
-			//No Ground
+	local PlanetPos = GetPlanetPos(ply:RealGetPos())
+	local NewAngles, NewOrigin, CorrecAng, PosAng = CalcRotation( ply, Origin, Angles )
+	
+	local min = Vector(-16,-16,0)
+	local max = Vector(16,16,72)
+	local maxCrouch = Vector (16,16,40)
+
+	//Check if enabled
+	if ( ply:GetMoveType() != MOVETYPE_NOCLIP ) then
+		//Rotate Player model
+		ply:SetAllowFullRotation(true)
+		ply:RealSetAngles( CorrecAng )
+		//Rotate collision bounds
+		local min = LocalToWorld(min,Angle(0,0,0),Vector(0,0,0),PosAng)
+		local max = LocalToWorld(max,Angle(0,0,0),Vector(0,0,0),PosAng)
+		local maxCrouch = LocalToWorld(maxCrouch,Angle(0,0,0),Vector(0,0,0),PosAng)
+	
+		//Only change things if enabled and viewing from player
+		if (ply:GetViewEntity() == ply)then
+		
+			Origin = NewOrigin
+			Angles = NewAngles
+			
+			//Find our ground
+			trace = util.TraceLine( {
+				start = Origin + PlanetPos,
+				endpos = PlanetPos,
+				mask = MASK_ALL,
+				filter = ply
+			} )
+
+			if ( trace.Hit ) then
+				ply:SetGroundEntity( world )			
+			else
+				//No Ground
+			end
 		end
 	end
 	--putting everything back in
 	View.origin = Origin
 	View.angles = Angles
 	View.fov = FieldOfView
-	
-	//Not neccesary anymore
-	////Quicker than server update (visual only)
-	////ply:SetNWVector("origin", Origin)
-	////ply:SetNWAngle("angles", Angles)
+	ply:SetHull(min,max)
+	ply:SetHullDuck(min,maxCrouch)
 	
 	//Syncing server
 	net.Start( "View" )
-		net.WriteVector( Origin )
-		net.WriteAngle( Angles )
+		net.WriteVector( NewOrigin )
+		net.WriteAngle( NewAngles )
 	net.SendToServer()
 	return View
+end
+
+//Recieving sound data from server
+net.Receive( "Sound", function( len )
+	local tbl = net.ReadTable()
+	local data = net.ReadTable()
+	local ply = LocalPlayer()
+	InAtmosphere( ply )
+
+	for _, ent in pairs( tbl ) do
+		if ( ent == ply:GetGroundEntity() ) then
+			//dampen by distance
+			data.Volume = data.Volume - math.abs( 20 * math.log10( 1 
+						/ ( data.Entity:GetPos() - ply:GetPos() ):Length() ) )
+			break//quick exit
+		end
+	end
+	sound.Play( data.SoundName, data.Entity:GetPos(), data.SoundLevel, data.Pitch, data.Volume )
+end )
+
+//Space crashing damage
+function RammingDmg( ent1, ent2 )
+	//Relative velocity
+	local relVel = (ent1:GetVelocity() - ent2:GetVelocity()):Length()
+	
+	//Take dmg
+	ent1:TakeDamage( ent2:GetPhysicsObject():GetMass() * relVel / ent1:GetPhysicsObject():GetMass(), ent2, ent2 )
+	ent2:TakeDamage( ent1:GetPhysicsObject():GetMass() * relVel / ent2:GetPhysicsObject():GetMass(), ent1, ent1 )
+	
+	//Assign ground if player
+	if (ent1:IsGround()) then
+		ent2:SetGroundEntity(ent1)
+		ent2:AddFlag(FL_ONGROUND)
+	end
+	if (ent2:IsGround()) then
+		ent1:SetGroundEntity(ent2)
+		ent1:AddFlag(FL_ONGROUND)
+	end
+end
+hook.Add( "ShouldCollide", "RammingDmg", RammingDmg )
+
+//Space chat rules
+function GM:OnPlayerChat( src, txt, bool, booldead )
+	local tab = {}
+	//from dead dude
+	if ( booldead ) then
+		table.insert( tab, Color( 255, 30, 40 ) )
+		table.insert( tab, "*DEAD* " )
+	end
+	//team chat
+	if ( bool ) then
+		table.insert( tab, Color( 30, 160, 40 ) )
+		table.insert( tab, "( TEAM ) " )
+	end
+
+	if ( IsValid( src ) ) then
+		//Add players name
+		table.insert( tab, src )
+		//global chat
+		if ( string.sub( txt, 1, 4 ) == "/all" ) then
+			if (src:IsOwner()) then table.insert( tab, "[Owner]" )
+			elseif (src:IsSuperAdmin()) then table.insert( tab, "[SuperAdmin]" )
+			elseif (src:IsAdmin()) then table.insert( tab, "[Admin]" )
+			else table.insert( tab, "[Global]" ) end
+			txt = string.sub( txt, 5 ) 
+		end
+	else
+		//from console
+		table.insert( tab, "Console" )
+	end
+	
+	//Add their text
+	table.insert( tab, Color( 255, 255, 255 ) )
+	table.insert( tab, ": "..txt )
+	
+
+	chat.AddText( unpack( tab ) )
+	//Block normal chat
+	return true
 end

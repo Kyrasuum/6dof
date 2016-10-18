@@ -4,20 +4,28 @@ Good hooks for server side edits
 */
 AddCSLuaFile( "cl_init.lua" ) 
 AddCSLuaFile( "shared.lua" )
-AddCSLuaFile( "specialchars.lua" )
+//Scoreboard
+AddCSLuaFile( "qmod/qmod.lua" )
 
 include( 'shared.lua' )
 include( 'specialchars.lua' )
+//Network cacheing
 util.AddNetworkString( "View" )
+util.AddNetworkString( "Sound" )
+ 
+//Init database
+hook.Add( "Initialize", "Initialize", function()
+	//sql.Query("DROP TABLE player_info")//flushes the data
+	tables_exist()
+end )
  
 //User Authentication parsing
 function GM:PlayerAuthed( ply, stid, unid )
 	RunConsoleCommand( "sb_start" )
-	stid = ply:SteamID()
 	ply:SetTeam(1)
 	ply:Spectate( 5 )
-	CheckSpecialCharacters( ply, stid, unid )
 end
+
 //Restrict some weapons
 function GM:PlayerLoadout( ply )
 	ply:StripWeapons()
@@ -55,6 +63,8 @@ end
 function unspectate( ply ) 
 	ply:UnSpectate()
 	ply:Spawn()
+
+	player_exists( ply ) 
 end
 concommand.Add( "unspectate", unspectate )
  
@@ -62,34 +72,19 @@ concommand.Add( "unspectate", unspectate )
 function GM:PlayerSpawn(ply)
     self.BaseClass:PlayerSpawn(ply)
 	ply:SetAllowWeaponsInVehicle( true )
-	
-	//Initial value so gmod can calm its tits
-	ply:SetNWVector("origin", ply:RealGetPos())
-	ply:SetNWAngle("angles", Angle(0,0,0))
-	
-	/*Disabled until further notice//
-	//This entity is used to correct guns
-	if (IsValid(ply:GetNWEntity("pcam"))) then 
-		ply:GetNWEntity("pcam"):Remove() 
-	end
-	local pcam = ents.Create("pcam")
-	if ( !IsValid( pcam ) ) then return end
-	pcam:SetPos(ply:RealGetPos())
-	pcam:SetOwner(ply)
-	pcam:Spawn()
-	ply:SetNWEntity("pcam", pcam)
-	*/
 
-    ply:SetGravity( 0.00001 )  //depreciated use
+	//ply:SetMoveType( MOVETYPE_VPHYSICS )
+	
+    ply:SetGravity( 0.00001 )
     ply:SetWalkSpeed( 325 )  
 	ply:SetRunSpeed( 325 )
 end
 
 --no gravity on props
-local function Init_TriggerLogic()
+function GM:InitPostEntity()
 	physenv.SetGravity( Vector( 0, 0, 0 ) )
+	physenv.SetAirDensity( 0 )
 end
-hook.Add( "InitPostEntity", "MapStartTrigger", Init_TriggerLogic )
 
 //Needed to sync shooting
 net.Receive( "View", function( len, ply )
@@ -97,6 +92,88 @@ net.Receive( "View", function( len, ply )
 	ply:SetNWVector("origin", net.ReadVector())
 	ply:SetNWAngle("angles", net.ReadAngle())
 end )
+
+//Space chat rules
+function GM:PlayerCanSeePlayersChat( txt, bool, tar, src )
+	local tab = {}
+	//from dead dude
+	if ( !src:Alive() ) then
+		table.insert( tab, Color( 255, 30, 40 ) )
+		table.insert( tab, "*DEAD* " )
+	end
+	//team chat
+	if ( bool ) then
+		table.insert( tab, Color( 30, 160, 40 ) )
+		table.insert( tab, "( TEAM ) " )
+	end
+
+	if ( IsValid( src ) ) then
+		//Add players name
+		table.insert( tab, src )
+		//global chat
+		if ( string.sub( txt, 1, 4 ) == "/all" ) then
+			if (src:IsOwner()) then table.insert( tab, "[Owner]" )
+			elseif (src:IsSuperAdmin()) then table.insert( tab, "[SuperAdmin]" )
+			elseif (src:IsAdmin()) then table.insert( tab, "[Admin]" )
+			else table.insert( tab, "[Global]" ) end
+			txt = string.sub( txt, 5 ) 
+		else
+			//Scaling by distance
+			local vol = 100
+			local vol = vol - math.abs( 20 * math.log10( 1 / ( tar:GetPos() -
+				src:GetPos() ):Length() ) ) / GetConVar( "planetview_chatDist" ):GetInt()
+			if (vol <= 0) then return false end
+			local tbl = string.ToTable( txt )
+			for i = 0, string.len( txt ) do
+				//interference based on distance
+				if ( math.random( 0,100 ) > vol ) then
+					tbl[i] = '*'
+				end
+			end
+			txt = table.ToString( tbl )
+		end
+	else
+		//from console
+		table.insert( tab, "Console" )
+	end
+	
+	//Add their text
+	table.insert( tab, Color( 255, 255, 255 ) )
+	table.insert( tab, ": "..txt )
+	
+	//Should we be able to see this
+	if ((tar:Team() == src:Team()) || !bool) then 
+		chat.AddText( unpack( tab ) )
+	end
+	//Block normal chat
+	return false
+end
+
+//We process fall damage within collision.  A seperate calc here is not needed.
+function GM:GetFallDamage( ply, speed )
+	return ( 0 )
+end
+
+//Space sound function
+function GM:EntityEmitSound( data )
+	if !IsValid(data.Entity) then return nil end
+	//check if in space
+	if !InAtmosphere(data.Entity) then
+		data.DSP = 30
+		if (constraint.HasConstraints( data.Entity )) then
+			local tbl = constraint.GetAllConstrainedEntities( data.Entity )
+			//send sound data to all clients
+			net.Start( "Sound" )
+				net.WriteTable( tbl )
+				net.WriteTable( data )
+			net.Broadcast()
+		end
+		//we handle sound client side
+		return false
+	end
+	//in atmosphere, dont change anything
+	return nil
+end
 
 /*//==================================================================================////
 								Whitelisting is done here
@@ -112,7 +189,7 @@ local sent = {}
 
 //Props
 function GM:PlayerSpawnProp( ply, mdl )
-	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( models ) do
 		if string.find( mdl, v ) then
 			return true//The model is whitelisted
@@ -123,7 +200,7 @@ function GM:PlayerSpawnProp( ply, mdl )
 end
 //Effects
 function GM:PlayerSpawnEffect( ply, mdl )
-	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( effect ) do
 		if string.find( mdl, v ) then
 			return true//The model is whitelisted
@@ -134,7 +211,7 @@ function GM:PlayerSpawnEffect( ply, mdl )
 end
 //NPCS
 function GM:PlayerSpawnNPC( ply, npc, weapon )
-	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( npcs ) do
 		if string.find( npc, v ) then
 			return true//The model is whitelisted
@@ -145,7 +222,7 @@ function GM:PlayerSpawnNPC( ply, npc, weapon )
 end
 //Ragdolls
 function GM:PlayerSpawnRagdoll( ply, mdl, ent )
-	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( ragdolls ) do
 		if string.find( mdl, v ) then
 			return true//The model is whitelisted
@@ -156,7 +233,7 @@ function GM:PlayerSpawnRagdoll( ply, mdl, ent )
 end
 //Vehicles
 function GM:PlayerSpawnVehicle( ply, mdl, name, tab )
-	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( vehicle ) do
 		if string.find( mdl, v ) then
 			return true//The model is whitelisted
@@ -167,7 +244,7 @@ function GM:PlayerSpawnVehicle( ply, mdl, name, tab )
 end
 //SWEPs
 function GM:PlayerGiveSWEP( ply, wep, tab )
-	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( weapon ) do
 		if string.find( wep, v ) then
 			return true//The model is whitelisted
@@ -178,7 +255,7 @@ function GM:PlayerGiveSWEP( ply, wep, tab )
 end
 
 function GM:PlayerSpawnSWEP( ply, wep, tab )
-	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( weapon ) do
 		if string.find( mdl, v ) then
 			return true//The model is whitelisted
@@ -189,7 +266,7 @@ function GM:PlayerSpawnSWEP( ply, wep, tab )
 end
 //SENTs
 function GM:PlayerSpawnSENT( ply , mdl )
-	if (ply:IsAdmin() || ply:IsSuperAdmin()) then return true end
+	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( sent ) do
 		if string.find( mdl, v ) then
 			return true//The model is whitelisted

@@ -1,29 +1,88 @@
 /*
 Just some protection for defining user groups
+Database is handled here
 */
-function CheckSpecialCharacters( ply )
-	//Check if guest based on play time
-	if ( ply:GetPlayingTime() < 1) then
-		pv_guest(ply)
-	else
-		pv_member(ply)
-	end
-	
-	//Architecht
-	if ( ply:SteamID() == "STEAM_0:0:0"  || ply:SteamID() == "STEAM_0:1:19289341" ) then
-		pv_owner(ply)
-	end
-	//Zguh
-	if ( ply:SteamID() == "STEAM_0:0:23441985" ) then
-		pv_superadmin(ply)
-	end
-	if ( ply:SteamID() == "STEAM_0:1:32147886" ) then
-		pv_superadmin(ply)
-	end
-	//Include other steamid's with their permissions here
+/*//==================================================================================////
+								Database is handled here
+*///==================================================================================////
+function sql_value_stats ( ply )
+	steamID = ply:SteamID()
+	unique_id = sql.QueryValue("SELECT unique_id FROM player_info WHERE unique_id = '"..steamID.."'")
+	money = tonumber(sql.QueryValue("SELECT money FROM player_info WHERE unique_id = '"..steamID.."'"), 10)
+	permis = tonumber(sql.QueryValue("SELECT permis FROM player_info WHERE unique_id = '"..steamID.."'"), 10)
+	time = tonumber(sql.QueryValue("SELECT time FROM player_info WHERE unique_id = '"..steamID.."'"), 10)
+	ply:SetNWString("unique_id", unique_id)
+	ply:SetNWInt("money", money)
+	CheckSpecialCharacters( ply, permis )
+	ply:SetPData("PlayingTime", time + ply:TimeConnected()/60)
 end
 
-//Persmissions Functions
+ 
+function saveStat ( ply )
+	money = ply:GetNWInt("money")
+	unique_id = ply:SteamID()
+	permis = ply:Team()
+	time = ply:GetPData("PlayingTime") + 2
+	ply:SetPData("PlayingTime", time)
+	sql.Query("UPDATE player_info SET money = "..money..", permis = "..permis..", time = "..time.." WHERE unique_id = '"..unique_id.."'")
+	ply:ChatPrint("Stats updated!")
+end
+ 
+function tables_exist()
+	if (sql.TableExists("player_info")) then
+		print("tables already exist!")
+	else
+		if (!sql.TableExists("player_info")) then
+			query = "CREATE TABLE player_info ( unique_id varchar(255), money int, permis int, time int )"
+			result = sql.Query(query)
+			if (sql.TableExists("player_info")) then
+				print("Success! player_info table created")
+			else
+				print("Somthing went wrong with the player_info query!")
+				print( sql.LastError( result ))
+			end	
+		end
+	end
+end
+ 
+function new_player( steamID, ply )
+		sql.Query( "INSERT INTO player_info (`unique_id`, `money`, 'permis', 'time')VALUES ('"..steamID.."', '100', '2', '0')" )
+		result = sql.Query( "SELECT unique_id, money, permis, time FROM player_info WHERE unique_id = '"..steamID.."'" )
+		if (result) then
+			print("Player account created!")
+			sql_value_stats( ply )
+		else
+			print("Something went wrong with creating a players info!")
+		end
+end
+ 
+function player_exists( ply )
+	steamID = ply:SteamID()
+ 
+	result = sql.Query("SELECT unique_id, money, permis, time FROM player_info WHERE unique_id = '"..steamID.."'")
+	if (result) then
+			//they exist.  bring up values
+			sql_value_stats( ply )
+	else
+		new_player( steamID, ply )
+	end
+
+	timer.Create("SaveStat", 120, 0, function() saveStat( ply ) end )
+end
+
+/*//==================================================================================////
+								Persmissions Functions
+*///==================================================================================////
+//Permissions Switch Statement
+function CheckSpecialCharacters( ply, permis )
+	if (permis == 2) then pv_guest(ply)
+	elseif (permis == 3) then pv_member(ply)
+	elseif (permis == 4) then pv_admin(ply)
+	elseif (permis == 5) then pv_superadmin(ply)
+	elseif (permis == 6) then pv_owner(ply)
+	end
+end
+
 function pv_guest( ply )
 	ply:SetTeam(2)
 	WelcomeMessage( ply )
@@ -55,5 +114,6 @@ function WelcomeMessage( ply )
 end
 
 function ReturnMessage( ply )
-	ply:PrintMessage( HUD_PRINTTALK, "Welcome back, " .. ply:Nick() .. "\nYou connected under the IP: " .. ply:IPAddress() )
+	ply:PrintMessage( HUD_PRINTTALK, "Welcome back, " .. ply:Nick() .. "\nYou connected under the IP: " .. ply:IPAddress())
+	ply:PrintMessage( HUD_PRINTTALK, "You have played for " .. ply:GetPData("PlayingTime") .. " minutes." )
 end

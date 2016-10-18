@@ -7,15 +7,19 @@ AddCSLuaFile("shared.lua")
 
 include("shared.lua")
 
+//grab values from map
 function ENT:KeyValue( key, value )
 	if ( key == "type" ) then
-		self.ptype = value
+		self.ptype = value || "planet"
 	end
 	if ( key == "radius" ) then
-		self.prad = value
+		self.prad = tonumber(value,10) || 1
 	end
 	if ( key == "mass" ) then
-		self.pmass = value
+		self.pmass = tonumber(value,10) || 1
+	end
+	if ( key == "atmosphere" ) then
+		self.atmos = tonumber(value,10) || prad
 	end
 	if ( key == "Name" ) then
 		self:SetName(value)
@@ -45,9 +49,9 @@ function ENT:Think()
 			direction = (self:GetPos() - v:GetPos()):GetNormalized()
 			if (v:GetClass() != "pcam" && v:GetClass() != "pdummy") then
 				if (v:IsPlayer()) then
-					v:SetVelocity( direction * (mult * GetConVar("planetview_playerMass"):GetInt()) ) 
+					v:SetVelocity( direction * (mult * v:GetMass()) ) 
 				else
-					phys:ApplyForceOffset( direction * (mult * phys:GetMass()), phys:GetMassCenter() + phys:GetPos() )
+					phys:ApplyForceCenter( direction * (mult * phys:GetMass()) )
 				end
 			end
 		end

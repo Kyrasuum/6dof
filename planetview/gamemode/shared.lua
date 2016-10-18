@@ -2,6 +2,10 @@
 This File contains library functions, overrides, or other
 reference material to support server and client.
 */
+//Scoreboard includes
+include( "qmod/qmod.lua" )
+
+
 //defines
 GM.Name		= "planetview"
 GM.Author	= "Architecht, Fang"
@@ -12,59 +16,227 @@ DeriveGamemode( "sandbox" )
 GM.AllowAutoTeam = false
 GM.AllowSpectating = true
 
+function ChangeMyTeam( ply, cmd, args )
+	local _team = args[ 1 ] && tonumber( args[ 1 ] ) || 0;
+	ply:SetTeam( _team );
+	ply:Spawn( );
+end
+concommand.Add( "set_team", ChangeMyTeam );
+
 //teams
-team.SetUp( 0, "Joining", Color( 0, 0, 0, 255) ) 
+team.SetUp( 1, "Joining", Color( 0, 0, 0, 255) ) 
 team.SetUp( 2, "Guest", Color( 255, 50, 50, 255) ) 
 team.SetUp( 3, "Member", Color( 200, 10, 10, 255) ) 
 team.SetUp( 4, "Admin", Color( 50, 50, 255, 255) ) 
 team.SetUp( 5, "SuperAdmin", Color( 10, 10, 200, 255) ) 
 team.SetUp( 6, "Owner", Color( 255, 255, 255, 255) ) 
 
---no flying for guests
-function GM:PlayerNoClip( ply, toggle )
-	if ply:IsAdmin() || ply:IsSuperAdmin() then
-		if toggle then
-			GetConVar("planetview_view_enable"):SetInt(0)
-		else
-			GetConVar("planetview_view_enable"):SetInt(1)
-		end
-		return true
-	else return false
-	end
+function GM:GetGameDescription()
+	return "Planetview is a child of spacebuild featuring realistic spherical planets"
 end
 
+//Decides if we should play (falling) animation
+function GM:HandlePlayerVaulting( ply, vel )
+	//maybe do more stuff later
+	return false
+end
+
+//Decides if we should play (noclip) animation
+function GM:HandlePlayerNoClipping( ply, vel )
+	//maybe do more stuff later
+	return false
+end
+
+--no flying for guests
+function GM:PlayerNoClip( ply, toggle )
+	//Only admin can noclip
+	if ply:IsAdmin() then
+		if toggle then
+			//change movement type
+			ply:SetMoveType( MOVETYPE_NOCLIP )
+			ply:SetAllowFullRotation(false)
+		else
+			//change movement type
+			ply:SetMoveType( MOVETYPE_WALK )
+			ply:SetAllowFullRotation(true)
+		end
+	else
+		ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to noclip");
+	end
+	return false//Never do normal noclip
+end
+
+//--------------------------------------------------------------------------
+//Library functions for rotating players view
+//--------------------------------------------------------------------------
+function CalcRotation( ply, Origin, EyeAng )
+	//Checking values
+	if (!IsValid(ply)) then return end
+	if (!IsValid(Origin)) then Origin = ply:RealEyePos() end
+	if (!IsValid(EyeAng)) then EyeAng = ply:RealEyeAngles() end
+
+	//Calc Variables
+	local PlanetPos = GetPlanetPos(ply)
+	local LocalPos = (ply:RealGetPos()-PlanetPos)
+	local RollAng = Vector(-LocalPos.y,math.abs(LocalPos.z),0):AngleEx(Vector(0,0,0)).y -90
+	local PitchAng = Vector(-LocalPos.x,LocalPos.z,0):AngleEx(Vector(0,0,0)).y -90
+	local PosAng = Angle(PitchAng,0,-RollAng)
+	local _,CorrecAng = LocalToWorld(Origin,Angle(0,EyeAng.y,0),Origin,PosAng)
+		
+	//Output
+	local _,Angles = LocalToWorld(Origin,Angle(EyeAng.p,0,0),Origin,CorrecAng)
+	local Origin = ply:RealGetPos()+CorrecAng:Up()*61
+	
+	//If we should be pointing somewhere
+	if (ply.OffAng != nil && ply.HoldAng == 1) then
+		Angles = ply.OffAng
+	else
+		ply.OffAng = Angle(0,0,0)	//Stores angle to point at
+		ply.HoldAng = 0				//used as a toggle
+	end
+	
+	return Angles, Origin, CorrecAng, PosAng //New Eye Angles, New Eye Pos, New Normal
+end
+
+//--------------------------------------------------------------------------
 //library function for nearest entity
-local function FindNearestEntity( className, pos, range )
+//--------------------------------------------------------------------------
+function FindNearestEntity( className, src, range )
+	if (!IsValid(src)) then return src end
     local nearestEnt;
     for i, entity in ipairs( ents.FindByClass( className ) ) do
-        local distance = pos:Distance( entity:GetPos() );
+        local distance = src:GetPos():Distance( entity:GetPos() );
         if( distance <= range ) then
             nearestEnt = entity;
             range = distance; 
         end
     end
-    return nearestEnt;
+    return nearestEnt, range;
 end
 
+//--------------------------------------------------------------------------
+//library function for checking if in atmosphere
+//--------------------------------------------------------------------------
+function InAtmosphere( src )
+	ent,range = FindNearestEntity( "planetphys", src, GetConVar("planetview_playerGravRange"):GetInt() )
+	//Update sound effects
+    if range > ent:GetTable().atmos then
+    	if (src:IsPlayer()) then
+    		src:SetDSP(31)//Space effect
+    	end
+    	return false
+    else
+    	if (src:IsPlayer()) then
+    		src:SetDSP(1)//Normal effect
+    	end
+    	return true
+    end
+end
+
+//--------------------------------------------------------------------------
 //Library function for planet pos
-function GetPlanetPos( pos )
-	ent = FindNearestEntity( "planetphys", pos, GetConVar("planetview_playerGravRange"):GetInt() )
+//--------------------------------------------------------------------------
+function GetPlanetPos( src )
+	if (!IsValid(src)) then return Vector(0,0,0) end
+	local ent = FindNearestEntity( "planetphys", src, GetConVar("planetview_playerGravRange"):GetInt() )
 	if (ent != nil && ent != NULL ) then
 		return ent:GetPos()
 	else
-		return pos
+		return src:GetPos()
 	end
 end
 
---Console variables
-local function Init_Gamemode()
+function GM:Initialize()
+	//Convars
 	CreateConVar("planetview_gravConst", 0.00000000006674)//This scales all gravity interaction
 	CreateConVar("planetview_playerMass", 1)//how heavy is player
 	CreateConVar("planetview_playerGravRange", 16834)//how far does player search for a nearby planet
-	CreateConVar("planetview_view_enable", 0)//0 is disabled; 1 is enabled
 	CreateConVar("planetview_debug", 0)//prints messages and makes debugging models visable
+	CreateConVar("planetview_chatDist", 10)//Coefficent for how far should player chat be fine
 end
-hook.Add( "Initialize", "initializing", Init_Gamemode );
+
+//Movement override
+function GM:SetupMove( ply, mv, cmd )
+	mv:SetMoveAngles( ply:GetAngles() )
+	cmd:SetViewAngles( ply:GetAngles() )
+	
+	return self.BaseClass:SetupMove( ply, mv, cmd )
+end
+
+//Player death here
+hook.Add("DoPlayerDeath", "drop weapon after death", function(ply)
+	ply:ShouldDropWeapon(true);
+end);
+ 
+hook.Add("PlayerDeath", "drop weapon after death", function(ply)
+	ply:ShouldDropWeapon(false);
+end);
+
+/*//==================================================================================////
+									Weapon Drop
+*///==================================================================================////
+
+function DropCurrentWeapon(ply)
+
+	
+	     local Currentweapon = ply:GetActiveWeapon()
+		 
+		 if !(Currentweapon && IsValid(Currentweapon)) then return end
+
+         local NewWeapon = ents.Create(Currentweapon:GetClass())
+	 
+		 NewWeapon:SetClip1(Currentweapon:Clip1())
+         NewWeapon:SetClip2(Currentweapon:Clip2())
+
+         ply:StripWeapon(Currentweapon:GetClass())
+
+		 ply.AllowWeaponPickupFix = 0
+
+         timer.Simple(1.8, function() ply.AllowWeaponPickupFix = 1 end )
+		 
+         NewWeapon:SetPos(ply:GetShootPos() + (ply:GetAimVector() * 30))
+
+         NewWeapon:Spawn()
+		 local PhysWeap = NewWeapon:GetPhysicsObject()
+		 if !(PhysWeap && IsValid(PhysWeap)) then NewWeapon:Remove() return end
+		 
+		 PhysWeap:SetVelocity((ply:GetAimVector() * 150) + ((Vector(0,0,1):Cross(ply:GetAimVector())):GetNormalized() * (math.random(0, 80) - 40)))
+end
+
+if SERVER then
+concommand.Add("DropWeapon",DropCurrentWeapon)
+end
+
+function AutoBindOnSpawn(ply)
+	 ply.AllowWeaponPickupFix = 1
+     ply:ConCommand("bind \\ DropWeapon\n")
+end
+
+hook.Add("PlayerInitialSpawn","AutobindDropWeapon",AutoBindOnSpawn)
+
+function RePickupFix(ply,weapon)
+         if ply.AllowWeaponPickupFix == 0 then return false end
+end
+
+hook.Add("PlayerCanPickupWeapon","FixForPickup",RePickupFix)
+
+
+if SERVER then
+concommand.Add("Drop",DropCurrentWeapon)
+end
+
+function AutoBindOnSpawn(ply)
+	 ply.AllowWeaponPickupFix = 1
+     ply:ConCommand("bind \\ Drop\n")
+end
+
+hook.Add("PlayerInitialSpawn","AutobindDrop",AutoBindOnSpawn)
+
+function RePickupFix(ply,weapon)
+         if ply.AllowWeaponPickupFix == 0 then return false end
+end
+
+hook.Add("PlayerCanPickupWeapon","FixForPickup",RePickupFix)
 
 /*//==================================================================================////
 									Overriding Functions Here
@@ -97,6 +269,14 @@ end
 if !_R.Entity.RealGetAngles then
 	_R.Entity.RealGetAngles = _R.Entity.GetAngles
 end
+
+if !_R.Entity.RealIsOnGround then
+	_R.Entity.RealIsOnGround = _R.Entity.IsOnGround
+end
+
+if !_R.Entity.RealOnGround then
+	_R.Entity.RealOnGround = _R.Entity.OnGround
+end
 //Setters
 if !_R.Player.RealSetEyeAngles then
 	_R.Player.RealSetEyeAngles = _R.Player.SetEyeAngles
@@ -107,6 +287,14 @@ end
 //-------------------------------------------------------
 //New functions------------------------------------------
 //-------------------------------------------------------
+//Getters
+function _R.Player:GetMass()
+	 return GetConVar("planetview_playerMass"):GetInt()
+end
+
+function _R.Player:GetMassCenter()
+	 return Vector(0,0,0)
+end
 
 function _R.Player:GetShootPos()
 	return self:GetNWVector("origin") or self:RealGetShootPos()
@@ -131,35 +319,34 @@ end
 function _R.Entity:GetAngles()
 	return self:GetNWAngle("angles") or self:RealGetAngles()
 end
-
-function _R.Player:SetEyeAngles( ang)
+/*Do later
+function _R.Entity:IsOnGround()
 	
 end
 
+function _R.Entity:OnGround()
+	
+end
+*/
+//Setters
+function _R.Player:SetEyeAngles( ang )
+	//We dont know if they are using real values to set this.  Can be dangerious
+	self:RealSetEyeAngles( ang )
+end
+
 function _R.Entity:SetAngles( ang )
-
+	if (!ang || !IsValid(ang)) then return Angle(0,0,0) end
+	if (!self:IsPlayer()) then self:RealSetAngles( ang ) end
+end
+//Permissions
+function _R.Player:IsAdmin()
+	return (self:Team() > 3)
 end
 
-/*//==================================================================================////
-									Connection Time
-*///==================================================================================////
-function _R.Player:GetPlayingTime()
-   return self:GetNetworkedInt("PlayingTime")
+function _R.Player:IsSuperAdmin()
+	return (self:Team() > 4)
 end
 
-if SERVER then
-	function _R.Player:SavePlayingTime()
-		return self:SetPData("PlayingTime", self:GetPlayingTime() + self:TimeConnected())
-	end
-	/* LOADING AT PLAYER SPAWN */
-	function GM:PlayerInitialSpawn( ply )  // When spawning after joining the sever
-		if ply:GetPData("PlayingTime") != nil then
-			ply:SetNetworkedInt("PlayingTime", ply:GetPData("PlayingTime"))
-        end
-	end
-
-	/* SAVING AT DISCONNECT */
-	function GM:PlayerDisconnected( ply )
-		ply:SavePlayingTime()
-	end
+function _R.Player:IsOwner()
+	return (self:Team() == 6)
 end
