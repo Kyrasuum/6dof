@@ -155,14 +155,6 @@ function GM:Initialize()
 	CreateConVar("planetview_chatDist", 10)//Coefficent for how far should player chat be fine
 end
 
-//Movement override
-function GM:SetupMove( ply, mv, cmd )
-	mv:SetMoveAngles( ply:GetAngles() )
-	cmd:SetViewAngles( ply:GetAngles() )
-	
-	return self.BaseClass:SetupMove( ply, mv, cmd )
-end
-
 //Player death here
 hook.Add("DoPlayerDeath", "drop weapon after death", function(ply)
 	ply:ShouldDropWeapon(true);
@@ -288,10 +280,11 @@ end
 //New functions------------------------------------------
 //-------------------------------------------------------
 //Getters
+
 function _R.Player:GetMass()
 	 return GetConVar("planetview_playerMass"):GetInt()
 end
-
+/*
 function _R.Player:GetMassCenter()
 	 return Vector(0,0,0)
 end
@@ -317,7 +310,11 @@ function _R.Entity:GetPos()
 end
 
 function _R.Entity:GetAngles()
-	return self:GetNWAngle("angles") or self:RealGetAngles()
+	if (self:IsPlayer() && self:GetMoveType() == MOVETYPE_NOCLIP) then 
+		return self:GetNWAngle("angles") or self:RealGetAngles()
+	end
+
+	return self:RealGetAngles()
 end
 /*Do later
 function _R.Entity:IsOnGround()

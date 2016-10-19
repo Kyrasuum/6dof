@@ -37,22 +37,60 @@ SWEP.Instructions			= ""
 SWEP.Slot					= 1
 SWEP.SlotPos				= 9
 
+SWEP.left                   = false
+
+function SWEP:Initialize()
+	if SERVER then return end
+	ply = LocalPlayer()
+	self.VM = ply:GetViewModel()
+	local attachmentIndex = self.VM:LookupAttachment("muzzle")
+	if attachmentIndex == 0 then attachmentIndex = self.VM:LookupAttachment("1") end
+	self.Attach = attachmentIndex
+end
+
+function SWEP:PostDrawViewModel()
+    if (!self.left) then return end
+	ply = LocalPlayer()
+	render.SetMaterial(Material( "cable/redlaser" ) )
+	local startpos = self.VM:GetAttachment(self.Attach).Pos
+	local endpos = ply:GetAimVector()
+	endpos:Mul( 1000 )
+	endpos:Add( startpos )
+	render.DrawBeam(startpos, endpos, 40, 0, 12.5, Color(255, 255, 255, 255))
+    //self.lazer = false
+end
+
+//Unfreezes a prop
 function SWEP:Reload()
+    local ply = self.Owner
+    local ent = ply:GetEyeTrace().Entity
 
+    if !IsValid(ent) then return end
+    
+    if SERVER then
+        ent:SetMoveType(MOVETYPE_VPHYSICS)
+        ply:PhysgunUnfreeze()
+    end
 end
 
-function SWEP:Think()
-
-end
-
+//Allows us to move a prop
 function SWEP:PrimaryAttack()
-
+    self.left = true
+	pickupEntity( self.Owner )
 end
 
+//Freezes a prop
 function SWEP:SecondaryAttack()
+    local ply = self.Owner
+    local hit = ply:GetEyeTrace().Entity
 
+    if ( !IsValid(hit) || !IsValid(hit:GetPhysicsObject()) ) then return end
+    
+    if SERVER then
+        ply:AddFrozenPhysicsObject(hit, hit:GetPhysicsObject())
+        hit:SetMoveType(MOVETYPE_NONE)
+    end
 end
-
 
 -- This function determines if a player can pickup a given entity
 function AllowedToPickup( ply, ent )
@@ -88,11 +126,6 @@ function canPickup( ply, ent )
     end
 
     for k, v in pairs(oPickedUp) do
-        --[[-- Check if this car is already physgun
-        if ent == v.ent then
-            return false
-        end]]
-
         -- Check if this player already picked up something
         if ply == v.ply then
             return false
@@ -135,15 +168,12 @@ function tryPickUp( ply, ent )
         if canPickup(ply, ent) then
             local pos = ent:GetPos()
             local ang = ent:GetAngles()
-
             local dist = ply:GetPos():Distance(pos)
-            local offset = pos - (ply:GetPos() + (ply:GetAngles() * Vector(0,0,-dist)))
 
             -- Store what is picked up
             addPickup({
                 ply = ply,
                 ent = ent,
-                offset = offset,
                 dist = dist
             })
             return
@@ -158,56 +188,6 @@ function snapToDegree( newAng )
     return math.floor(newAng/snap + 0.5)*snap
 end
 
--- Player is sending updated rotational data
-function tryRotate( args, ply )
-    local pickup = getPickup(ply)
-    -- Check if the player has something picked up
-    if IsValid(pickup) then
-        -- Grab vars
-        local ent = pickup.ent
-
-        -- Check if what we want to move is still valid
-        if ent and IsValid(ent) then
-            -- Grab offsets
-            local offset = pickup.offset
-            local dist = pickup.dist
-
-            -- Move Pickup
-            ent:SetPos( ply:GetPos() + ( args.a * Vector(0,0,-dist) ) + offset )
-
-            -- Grab the entities angles
-            local entAngle = ( args.r and args.s and ent.realAngles ) or ent:GetAngles()
-
-            -- Workout rotations
-            local rx = -entAngle * Vector(0, 1, 0)
-            local ry = -entAngle * Vector(-math.cos(args.a.yaw), 0, math.sin(args.a.yaw))
-
-            local rotx = Angle.AngleAxis((args.x or 0), rx)
-            local roty = Angle.AngleAxis((args.y or 0), ry)
-
-            -- Workout the new angle
-            local newAng = entAngle * rotx * roty
-            ent.realAngles = entAngle * rotx * roty
-
-            -- Should we snap?
-            if args.r and args.s then
-                newAng.pitch = snapToDegree(newAng.pitch)
-                newAng.roll = snapToDegree(newAng.roll)
-                newAng.yaw = snapToDegree(newAng.yaw)
-            end
-
-            -- Apply rotation
-            ent:SetAngles(newAng)
-
-            -- Check if we picked up a vehicle
-            if ent:IsVehicle() then
-                -- Stop it from falling
-                ent:SetVelocity(Vector(0, 0, 0))
-                ent:SetAngleVelocity(Vector(0, 0, 0))
-            end
-        end
-    end
-end
 
 -- Player has dropped their pickup
 function tryDrop( ply )
@@ -250,7 +230,7 @@ end
 
 -- Hook key pressed
 hook.Add("KeyPress", "PhysgunKeyDown", function( ply, key)
-
+    if SERVER then return end
     if hGrabbed then
         -- Rotation
         if key == IN_USE then
@@ -259,11 +239,12 @@ hook.Add("KeyPress", "PhysgunKeyDown", function( ply, key)
         end
         if input.IsButtonDown( MOUSE_WHEEL_UP ) || input.IsButtonDown( MOUSE_WHEEL_DOWN ) then
         	tryScroll( ply )
-        end
+        end  
     end
 end)
 
 hook.Add("KeyRelease", "PhysunKeyUp", function( ply, key)
+    if SERVER then return end
     -- If we have something grabbed
     if hGrabbed then
         -- Stop rotating
@@ -274,44 +255,23 @@ hook.Add("KeyRelease", "PhysunKeyUp", function( ply, key)
 end)
 
 -- Send rotational info
-hook.Add("Think", "PhysgunUpdate", function()
-	if (SERVER) then return end
-	local ply = LocalPlayer()
-    -- Check if we have an object grabbed
-    if hGrabbed then
+function SWEP:Think()
+	local ply = self.Owner
+    -- Check if we have an object grabbed and currently firing
+    if hGrabbed && self.left then
         -- Check if we've stopped firing
         if !input.IsButtonDown( MOUSE_LEFT ) then
             -- Drop the item
+            self.left = false
             tryDrop( ply )
             return
         end
 
-        -- Start to build data
-        local data = {
-            a = ply:GetAngles()
-        }
-
         -- Check if there was any rotation
         if bRotating then
-            data.r = true
-
-            if vRot.x ~= 0 then
-                data.x = vRot.x /25
-            end
-            if vRot.y ~= 0 then
-                data.y = vRot.y /25
-            end
-
-            -- Left shift (constant is a little broken atm)
+            -- Left shift
             if input.IsShiftDown() then
-                data.s = true
             end
         end
-
-        -- Send the update
-        tryRotate( data )
-
-        -- Reset rotations
-        vRot = Vector(0, 0, 0)
     end
-end)
+end

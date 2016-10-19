@@ -12,7 +12,7 @@ include( 'specialchars.lua' )
 //Network cacheing
 util.AddNetworkString( "View" )
 util.AddNetworkString( "Sound" )
- 
+
 //Init database
 hook.Add( "Initialize", "Initialize", function()
 	//sql.Query("DROP TABLE player_info")//flushes the data
@@ -74,6 +74,30 @@ function GM:PlayerSpawn(ply)
 	ply:SetAllowWeaponsInVehicle( true )
 
 	//ply:SetMoveType( MOVETYPE_VPHYSICS )
+
+	local x0 = -20 -- Define the min corner of the box
+	local y0 = -10
+	local z0 = -5
+
+	local x1 = 20 -- Define the max corner of the box
+	local y1 = 10
+	local z1 = 5
+
+	ply:PhysicsInitConvex( {
+		Vector( x0, y0, z0 ),
+		Vector( x0, y0, z1 ),
+		Vector( x0, y1, z0 ),
+		Vector( x0, y1, z1 ),
+		Vector( x1, y0, z0 ),
+		Vector( x1, y0, z1 ),
+		Vector( x1, y1, z0 ),
+		Vector( x1, y1, z1 )
+	} )
+
+	ply:SetMoveType( MOVETYPE_VPHYSICS )
+	ply:SetSolid( SOLID_VPHYSICS )
+	//ply:GetPhysicsObject():EnableMotion( false )
+	ply:EnableCustomCollisions( true )
 	
     ply:SetGravity( 0.00001 )
     ply:SetWalkSpeed( 325 )  
@@ -198,6 +222,9 @@ function GM:PlayerSpawnProp( ply, mdl )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
+function GM:PlayerSpawnedProp( ply, string, ent )
+	ent:SetOwner(ply)
+end	
 //Effects
 function GM:PlayerSpawnEffect( ply, mdl )
 	if (ply:IsAdmin()) then return true end
@@ -209,6 +236,9 @@ function GM:PlayerSpawnEffect( ply, mdl )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
+function GM:PlayerSpawnedEffect( ply, string, ent )
+	ent:SetOwner(ply)
+end	
 //NPCS
 function GM:PlayerSpawnNPC( ply, npc, weapon )
 	if (ply:IsAdmin()) then return true end
@@ -220,6 +250,9 @@ function GM:PlayerSpawnNPC( ply, npc, weapon )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. npc);
 	return false//You cant spawn this
 end
+function GM:PlayerSpawnedNPC( ply, ent )
+	ent:SetOwner(ply)
+end	
 //Ragdolls
 function GM:PlayerSpawnRagdoll( ply, mdl, ent )
 	if (ply:IsAdmin()) then return true end
@@ -231,6 +264,9 @@ function GM:PlayerSpawnRagdoll( ply, mdl, ent )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
+function GM:PlayerSpawnedRagdoll( ply, string, ent )
+	ent:SetOwner(ply)
+end	
 //Vehicles
 function GM:PlayerSpawnVehicle( ply, mdl, name, tab )
 	if (ply:IsAdmin()) then return true end
@@ -242,18 +278,22 @@ function GM:PlayerSpawnVehicle( ply, mdl, name, tab )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
+function GM:PlayerSpawnedVehicle( ply, ent )
+	ent:SetOwner(ply)
+end	
 //SWEPs
 function GM:PlayerGiveSWEP( ply, wep, tab )
 	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( weapon ) do
 		if string.find( wep, v ) then
+			tab.Owner = ply
+			tab.AccurateCrosshair = true
 			return true//The model is whitelisted
 		end
 	end
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. wep);
 	return false//You cant spawn this
 end
-
 function GM:PlayerSpawnSWEP( ply, wep, tab )
 	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( weapon ) do
@@ -264,6 +304,11 @@ function GM:PlayerSpawnSWEP( ply, wep, tab )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
+function GM:PlayerSpawnedSWEP( ply, ent )
+	ent:SetOwner(ply)
+	ent:GetTable().AccurateCrosshair = true
+	ent:GetTable().Owner = ply
+end	
 //SENTs
 function GM:PlayerSpawnSENT( ply , mdl )
 	if (ply:IsAdmin()) then return true end
@@ -275,3 +320,6 @@ function GM:PlayerSpawnSENT( ply , mdl )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
+function GM:PlayerSpawnedSENT( ply, ent )
+	ent:SetOwner(ply)
+end	

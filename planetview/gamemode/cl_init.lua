@@ -132,7 +132,11 @@ function GM:CalcView(ply, Origin, Angles, FieldOfView)
 		local min = LocalToWorld(min,Angle(0,0,0),Vector(0,0,0),PosAng)
 		local max = LocalToWorld(max,Angle(0,0,0),Vector(0,0,0),PosAng)
 		local maxCrouch = LocalToWorld(maxCrouch,Angle(0,0,0),Vector(0,0,0),PosAng)
-	
+		
+		//print("min", min)
+		//print("max", max)
+		//print("maxCrouch", maxCrouch)
+
 		//Only change things if enabled and viewing from player
 		if (ply:GetViewEntity() == ply)then
 		
@@ -153,19 +157,27 @@ function GM:CalcView(ply, Origin, Angles, FieldOfView)
 				//No Ground
 			end
 		end
+
+		//Syncing server
+		net.Start( "View" )
+			net.WriteVector( NewOrigin )
+			net.WriteAngle( NewAngles )
+		net.SendToServer()
+	else
+		//Syncing server
+		net.Start( "View" )
+			net.WriteVector( Origin )
+			net.WriteAngle( Angles )
+		net.SendToServer()		
 	end
+
 	--putting everything back in
 	View.origin = Origin
 	View.angles = Angles
 	View.fov = FieldOfView
-	ply:SetHull(min,max)
-	ply:SetHullDuck(min,maxCrouch)
-	
-	//Syncing server
-	net.Start( "View" )
-		net.WriteVector( NewOrigin )
-		net.WriteAngle( NewAngles )
-	net.SendToServer()
+	//Update collision bounds
+	//ply:SetHull(min,max)
+	//ply:SetHullDuck(min,maxCrouch)
 	return View
 end
 
