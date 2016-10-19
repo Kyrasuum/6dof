@@ -118,24 +118,12 @@ function GM:CalcView(ply, Origin, Angles, FieldOfView)
 
 	local PlanetPos = GetPlanetPos(ply:RealGetPos())
 	local NewAngles, NewOrigin, CorrecAng, PosAng = CalcRotation( ply, Origin, Angles )
-	
-	local min = Vector(-16,-16,0)
-	local max = Vector(16,16,72)
-	local maxCrouch = Vector (16,16,40)
 
 	//Check if enabled
 	if ( ply:GetMoveType() != MOVETYPE_NOCLIP ) then
 		//Rotate Player model
 		ply:SetAllowFullRotation(true)
 		ply:RealSetAngles( CorrecAng )
-		//Rotate collision bounds
-		local min = LocalToWorld(min,Angle(0,0,0),Vector(0,0,0),PosAng)
-		local max = LocalToWorld(max,Angle(0,0,0),Vector(0,0,0),PosAng)
-		local maxCrouch = LocalToWorld(maxCrouch,Angle(0,0,0),Vector(0,0,0),PosAng)
-		
-		//print("min", min)
-		//print("max", max)
-		//print("maxCrouch", maxCrouch)
 
 		//Only change things if enabled and viewing from player
 		if (ply:GetViewEntity() == ply)then
@@ -175,9 +163,6 @@ function GM:CalcView(ply, Origin, Angles, FieldOfView)
 	View.origin = Origin
 	View.angles = Angles
 	View.fov = FieldOfView
-	//Update collision bounds
-	//ply:SetHull(min,max)
-	//ply:SetHullDuck(min,maxCrouch)
 	return View
 end
 

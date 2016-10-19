@@ -12,10 +12,10 @@ SWEP.AutoSwitchFrom 		= true
 SWEP.HoldType				= "physgun"
 SWEP.FiresUnderwater 		= true
 	
-SWEP.PuntForce				= 300000 -- 80000
+SWEP.PuntForce				= 80000 -- 80000
 SWEP.PullForce				= 10000
 SWEP.MaxMass				= 15000 -- 250
-SWEP.MaxPuntRange			= 5000 --550
+SWEP.MaxPuntRange			= 550 --550
 SWEP.MaxPickupRange			= 850
 SWEP.Distance				= 55 -- 55
 	

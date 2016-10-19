@@ -13,20 +13,22 @@ SWEP.HoldType				= "physgun"
 SWEP.FiresUnderwater 		= true
 	
 
--- variables that need global plugin scope
-hGrabbed = nil
-bRotating = false
-vRot = Vector(0, 0, 0)
+-- physgun variables
+SWEP.hGrabbed               = nil
+SWEP.bRotating              = false
+SWEP.physRange              = 1000
 	
 SWEP.Primary.ClipSize		= -1
 SWEP.Primary.DefaultClip	= -1
 SWEP.Primary.Automatic		= true
 SWEP.Primary.Ammo			= ""
+SWEP.Primary.Automatic      = false
 	
 SWEP.Secondary.ClipSize		= -1
 SWEP.Secondary.DefaultClip	= -1
 SWEP.Secondary.Automatic	= true
 SWEP.Secondary.Ammo			= ""
+SWEP.Secondary.Automatic    = false
 
 SWEP.PrintName				= "Physics Gun"
 SWEP.Category 				= "PlanetView"
@@ -37,27 +39,38 @@ SWEP.Instructions			= ""
 SWEP.Slot					= 1
 SWEP.SlotPos				= 9
 
-SWEP.left                   = false
-
 function SWEP:Initialize()
-	if SERVER then return end
-	ply = LocalPlayer()
+	ply = self:GetOwner()
+    if !ply || !IsValid(ply) then return end
 	self.VM = ply:GetViewModel()
 	local attachmentIndex = self.VM:LookupAttachment("muzzle")
 	if attachmentIndex == 0 then attachmentIndex = self.VM:LookupAttachment("1") end
 	self.Attach = attachmentIndex
 end
 
-function SWEP:PostDrawViewModel()
-    if (!self.left) then return end
-	ply = LocalPlayer()
-	render.SetMaterial(Material( "cable/redlaser" ) )
-	local startpos = self.VM:GetAttachment(self.Attach).Pos
-	local endpos = ply:GetAimVector()
-	endpos:Mul( 1000 )
-	endpos:Add( startpos )
-	render.DrawBeam(startpos, endpos, 40, 0, 12.5, Color(255, 255, 255, 255))
-    //self.lazer = false
+function SWEP:DrawWorldModel()
+    self:DrawModel()
+    ply = self:GetOwner()
+    if !ply || !IsValid(ply) then return end
+    if ply:KeyDown(IN_ATTACK) then
+        render.SetMaterial(Material( "cable/redlaser" ) )
+        local startpos = self.VM:GetAttachment(self.Attach).Pos
+        local endpos = self:GetOwner():GetAimVector()
+        endpos:Mul( self.physRange )
+        endpos:Add( startpos )
+        render.DrawBeam(startpos, endpos, 40, 0, 12.5, Color(255, 255, 255, 255))
+    end
+end
+
+function SWEP:PostDrawViewModel( vm, wep, ply )
+    if ply:KeyDown(IN_ATTACK) then
+        render.SetMaterial(Material( "cable/redlaser" ) )
+        local startpos = self.VM:GetAttachment(self.Attach).Pos
+        local endpos = self:GetOwner():GetAimVector()
+        endpos:Mul( self.physRange )
+        endpos:Add( startpos )
+        render.DrawBeam(startpos, endpos, 40, 0, 12.5, Color(255, 255, 255, 255))
+    end
 end
 
 //Unfreezes a prop
@@ -67,45 +80,117 @@ function SWEP:Reload()
 
     if !IsValid(ent) then return end
     
-    if SERVER then
-        ent:SetMoveType(MOVETYPE_VPHYSICS)
-        ply:PhysgunUnfreeze()
-    end
+    ent:SetMoveType(MOVETYPE_VPHYSICS)
+    ent:GetPhysicsObject():EnableMotion( true )
 end
 
 //Allows us to move a prop
 function SWEP:PrimaryAttack()
-    self.left = true
-	pickupEntity( self.Owner )
+    self.Weapon:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
+    self.Owner:SetAnimation( PLAYER_ATTACK1 )
+    if ( !IsFirstTimePredicted() ) then return end
+    local ply = self:GetOwner()
+	if !ply || !IsValid(ply) then return end
+    -- Make sure we haven't already grabbed something
+    if self.hGrabbed == nil then
+        -- Attempt to grab an entity
+        ent = ply:GetEyeTrace().Entity
+        if ( ent && IsValid(ent) && AllowedToPickup(self, ent) && canPickup(ply, ent) ) then
+            -- Store what is picked up
+            ent:GetPhysicsObject():EnableMotion( true )
+
+            self.hGrabbed = {
+                ent = ent,
+                dist = ply:GetPos():Distance(ent:GetPos())
+            }
+
+            self:Pickup()
+            self.Weapon:SetNextPrimaryFire( CurTime() + 0.2 )
+        end
+    end
 end
 
 //Freezes a prop
 function SWEP:SecondaryAttack()
-    local ply = self.Owner
+    self.Weapon:SendWeaponAnim( ACT_VM_SECONDARYATTACK )
+    self.Owner:SetAnimation( PLAYER_ATTACK1 )
+    local ply = self:GetOwner()
+    if !ply || !IsValid(ply) then return end
     local hit = ply:GetEyeTrace().Entity
 
     if ( !IsValid(hit) || !IsValid(hit:GetPhysicsObject()) ) then return end
-    
     if SERVER then
-        ply:AddFrozenPhysicsObject(hit, hit:GetPhysicsObject())
-        hit:SetMoveType(MOVETYPE_NONE)
+        ply:AddFrozenPhysicsObject(hit,hit:GetPhysicsObject())
+        hit:GetPhysicsObject():EnableMotion( false )
+        ent:SetMoveType( MOVETYPE_NONE )
+    end
+    self.Weapon:SetNextPrimaryFire( CurTime() + 0.2 );
+end
+
+function SWEP:Holster()
+    self.Weapon:Drop()
+    return true
+end
+    
+function SWEP:OnDrop()
+    self.Weapon:Drop()
+end
+    
+function SWEP:OwnerChanged()
+    self.Weapon:Drop()
+end
+
+function SWEP:Pickup()
+    local trace = self.Owner:GetEyeTrace()
+
+    self.TP = ents.Create("prop_physics")
+    self.TP:SetPos(self.hGrabbed.ent:GetPhysicsObject():GetPos())
+    self.TP:SetModel("models/props_junk/PopCan01a.mdl")
+    self.TP:Spawn()
+    self.TP:SetCollisionGroup(COLLISION_GROUP_WORLD)
+    self.TP:SetColor(Color(255,255,255,0))
+    self.TP:SetRenderMode(RENDERMODE_TRANSCOLOR)
+    self.TP:GetPhysicsObject():SetMass(50000)
+    self.TP:GetPhysicsObject():EnableMotion(false)
+    
+    local bone = math.Clamp(trace.PhysicsBone,0,1)
+    self.Const = constraint.Weld(self.TP, self.hGrabbed.ent, 0, bone,0,1)
+end
+
+function SWEP:Drop()
+    if !IsValid(self) then return end
+
+    if self.TP then
+        if !IsValid(self.TP) then return end
+        self.TP:Remove()
+        self.TP = nil
+    end
+    
+    if self.Const then
+    if !IsValid(self.Const) then return end
+        self.Const:Remove()
+        self.Const = nil
+    end
+    if self.hGrabbed then
+        self.hGrabbed = nil
     end
 end
 
 -- This function determines if a player can pickup a given entity
-function AllowedToPickup( ply, ent )
+function AllowedToPickup( wep, ent )
+    local ply = wep:GetOwner()
+    if ply:GetPos():Distance(ent:GetPos()) > wep.physRange then
+        return false
+    end
     if ent:IsPlayer() then
-        -- Must be a player
         if ply:IsAdmin() then
             return true
         end
     elseif ent:IsVehicle() then
-        -- Must be a vehicle
         if ent:GetOwner() == ply then
             return true
         end 
     else
-        -- Must be a static object
         if ent:GetOwner() == ply then
             return true
         end 
@@ -113,9 +198,7 @@ function AllowedToPickup( ply, ent )
     return false
 end
 
--- Table of what is picked up
-local oPickedUp = {}
-
+-- Check if someone else is already grabbing this entity
 function canPickup( ply, ent )
     -- Check if this is a vehicle
     if ent:IsVehicle() then
@@ -124,63 +207,10 @@ function canPickup( ply, ent )
             return false
         end
     end
-
-    for k, v in pairs(oPickedUp) do
-        -- Check if this player already picked up something
-        if ply == v.ply then
-            return false
-        end
-    end
-
     return true
 end
 
--- Makes a player pickup an object
-function addPickup( pickup )
-    table.insert(oPickedUp, pickup)
-end
-
--- Returns what a player has picked up
-function getPickup( ply )
-    for k, v in pairs(oPickedUp) do
-        -- Check if this player already picked up something
-        if ply == v.ply then
-            return v
-        end
-    end
-end
-
--- Makes a player drop a given pickup
-function removePickup( ply )
-    for k, v in pairs(oPickedUp) do
-        -- Check if this player already picked up something
-        if ply == v.ply then
-            -- Remove this pickup
-            table.remove(oPickedUp, k)
-        end
-    end
-end
-
--- A player wants to pick something up
-function tryPickUp( ply, ent )
-    if ent and IsValid(ent) and AllowedToPickup(ply, ent) then
-        -- Check if someone else is already grabbing this entity
-        if canPickup(ply, ent) then
-            local pos = ent:GetPos()
-            local ang = ent:GetAngles()
-            local dist = ply:GetPos():Distance(pos)
-
-            -- Store what is picked up
-            addPickup({
-                ply = ply,
-                ent = ent,
-                dist = dist
-            })
-            return
-        end
-    end
-end
-
+-- Rotating a prop
 function snapToDegree( newAng )
     -- Settings
     local snap = math.pi/4
@@ -188,90 +218,52 @@ function snapToDegree( newAng )
     return math.floor(newAng/snap + 0.5)*snap
 end
 
-
--- Player has dropped their pickup
-function tryDrop( ply )
-	hGrabbed = nil
-    bRotating = false
-    -- Remove any pickups from this player
-    removePickup(ply)
-end
-
--- Player is scrolling
-function tryScroll( ply )
-    -- Check if this player has a pickup
-    local pickup = getPickup(ply)
-    if pickup then
-        pickup.dist = pickup.dist + input.IsButtonDown( MOUSE_WHEEL_UP ) 
-        						- input.IsButtonDown( MOUSE_WHEEL_DOWN )
-    end
-end
-
-function pickupEntity( ply )
-    -- Make sure we haven't already grabbed something
-    if not hGrabbed then
-        local oTrace = ply:GetEyeTrace()
-
-        -- Attempt to grab an entity
-        local ent = oTrace.Entity
-        if ent then
-            -- Store this as our grabbed entity
-            hGrabbed = ent
-            bRotating = false
-
-            -- Tell the server
-            tryPickUp( ply, ent )
-
-            return
-        end
-    end
-end
-
-
--- Hook key pressed
-hook.Add("KeyPress", "PhysgunKeyDown", function( ply, key)
-    if SERVER then return end
-    if hGrabbed then
-        -- Rotation
-        if key == IN_USE then
-            -- Start rotating
-            bRotating = true
-        end
-        if input.IsButtonDown( MOUSE_WHEEL_UP ) || input.IsButtonDown( MOUSE_WHEEL_DOWN ) then
-        	tryScroll( ply )
-        end  
-    end
-end)
-
-hook.Add("KeyRelease", "PhysunKeyUp", function( ply, key)
-    if SERVER then return end
-    -- If we have something grabbed
-    if hGrabbed then
-        -- Stop rotating
-        if key == IN_USE then
-            bRotating = false
-        end
-    end
-end)
-
 -- Send rotational info
 function SWEP:Think()
-	local ply = self.Owner
+	local ply = self:GetOwner()
+    if !ply || !IsValid(ply) then return end
     -- Check if we have an object grabbed and currently firing
-    if hGrabbed && self.left then
-        -- Check if we've stopped firing
-        if !input.IsButtonDown( MOUSE_LEFT ) then
-            -- Drop the item
-            self.left = false
-            tryDrop( ply )
-            return
+    if self.hGrabbed!=nil then
+        //Grabbed entity updating
+        if IsValid(self.TP) then
+            local ent = self.hGrabbed.ent
+            local dist = self.hGrabbed.dist
+            local phys = ent:GetPhysicsObject()
+
+            local pos = ply:GetAimVector()
+            pos:Mul(dist)
+            pos:Add(ply:EyePos())
+
+            local angVel = ent:GetPhysicsObject():GetAngleVelocity()
+            angVel:Mul(-1)
+
+            self.TP:SetPos(pos)
+            phys:AddAngleVelocity(angVel)
+
+            -- Check if there was any rotation
+            if self.bRotating then
+                -- Left shift
+                if ply:KeyDown(IN_SPEED) then
+                end
+            end
         end
 
-        -- Check if there was any rotation
-        if bRotating then
-            -- Left shift
-            if input.IsShiftDown() then
-            end
+        //Handling key press
+        if ply:KeyPressed(IN_USE) then
+            self.bRotating = true
+        end
+        //Doesnt work
+        if ply:KeyPressed(IN_WEAPON1) || ply:KeyPressed(IN_WEAPON2) then
+            //self.hGrabbed.dist = self.hGrabbed.dist + ply:KeyPressed(IN_WEAPON1) - ply:KeyPressed(IN_WEAPON2)
+        end  
+        //Handling key release
+        if ply:KeyReleased(IN_USE) then
+            self.bRotating = false
+        end
+        if ply:KeyReleased(IN_ATTACK) then
+            self:Drop()
+            self.hGrabbed = nil
+            self.bRotating = false
         end
     end
 end

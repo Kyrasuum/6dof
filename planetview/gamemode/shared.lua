@@ -82,10 +82,14 @@ function CalcRotation( ply, Origin, EyeAng )
 	local PitchAng = Vector(-LocalPos.x,LocalPos.z,0):AngleEx(Vector(0,0,0)).y -90
 	local PosAng = Angle(PitchAng,0,-RollAng)
 	local _,CorrecAng = LocalToWorld(Origin,Angle(0,EyeAng.y,0),Origin,PosAng)
+
+	local eyeOff = (ply:RealEyePos() - ply:RealGetPos()):Length()
 		
 	//Output
 	local _,Angles = LocalToWorld(Origin,Angle(EyeAng.p,0,0),Origin,CorrecAng)
-	local Origin = ply:RealGetPos()+CorrecAng:Up()*61
+	local Origin = CorrecAng:Up()
+	Origin:Mul(eyeOff)
+	Origin:Add( ply:RealGetPos() )
 	
 	//If we should be pointing somewhere
 	if (ply.OffAng != nil && ply.HoldAng == 1) then
@@ -163,73 +167,6 @@ end);
 hook.Add("PlayerDeath", "drop weapon after death", function(ply)
 	ply:ShouldDropWeapon(false);
 end);
-
-/*//==================================================================================////
-									Weapon Drop
-*///==================================================================================////
-
-function DropCurrentWeapon(ply)
-
-	
-	     local Currentweapon = ply:GetActiveWeapon()
-		 
-		 if !(Currentweapon && IsValid(Currentweapon)) then return end
-
-         local NewWeapon = ents.Create(Currentweapon:GetClass())
-	 
-		 NewWeapon:SetClip1(Currentweapon:Clip1())
-         NewWeapon:SetClip2(Currentweapon:Clip2())
-
-         ply:StripWeapon(Currentweapon:GetClass())
-
-		 ply.AllowWeaponPickupFix = 0
-
-         timer.Simple(1.8, function() ply.AllowWeaponPickupFix = 1 end )
-		 
-         NewWeapon:SetPos(ply:GetShootPos() + (ply:GetAimVector() * 30))
-
-         NewWeapon:Spawn()
-		 local PhysWeap = NewWeapon:GetPhysicsObject()
-		 if !(PhysWeap && IsValid(PhysWeap)) then NewWeapon:Remove() return end
-		 
-		 PhysWeap:SetVelocity((ply:GetAimVector() * 150) + ((Vector(0,0,1):Cross(ply:GetAimVector())):GetNormalized() * (math.random(0, 80) - 40)))
-end
-
-if SERVER then
-concommand.Add("DropWeapon",DropCurrentWeapon)
-end
-
-function AutoBindOnSpawn(ply)
-	 ply.AllowWeaponPickupFix = 1
-     ply:ConCommand("bind \\ DropWeapon\n")
-end
-
-hook.Add("PlayerInitialSpawn","AutobindDropWeapon",AutoBindOnSpawn)
-
-function RePickupFix(ply,weapon)
-         if ply.AllowWeaponPickupFix == 0 then return false end
-end
-
-hook.Add("PlayerCanPickupWeapon","FixForPickup",RePickupFix)
-
-
-if SERVER then
-concommand.Add("Drop",DropCurrentWeapon)
-end
-
-function AutoBindOnSpawn(ply)
-	 ply.AllowWeaponPickupFix = 1
-     ply:ConCommand("bind \\ Drop\n")
-end
-
-hook.Add("PlayerInitialSpawn","AutobindDrop",AutoBindOnSpawn)
-
-function RePickupFix(ply,weapon)
-         if ply.AllowWeaponPickupFix == 0 then return false end
-end
-
-hook.Add("PlayerCanPickupWeapon","FixForPickup",RePickupFix)
-
 /*//==================================================================================////
 									Overriding Functions Here
 								Grav Hull Designator inspired pattern
@@ -284,7 +221,7 @@ end
 function _R.Player:GetMass()
 	 return GetConVar("planetview_playerMass"):GetInt()
 end
-/*
+
 function _R.Player:GetMassCenter()
 	 return Vector(0,0,0)
 end

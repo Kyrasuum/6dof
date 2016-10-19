@@ -94,9 +94,11 @@ function GM:PlayerSpawn(ply)
 		Vector( x1, y1, z1 )
 	} )
 
-	ply:SetMoveType( MOVETYPE_VPHYSICS )
+	//ply:SetMoveType( MOVETYPE_VPHYSICS )
 	ply:SetSolid( SOLID_VPHYSICS )
-	//ply:GetPhysicsObject():EnableMotion( false )
+	ply:SetCollisionGroup(COLLISION_GROUP_PLAYER)
+	ply:GetPhysicsObject():Wake()
+	ply:GetPhysicsObject():EnableMotion( true )
 	ply:EnableCustomCollisions( true )
 	
     ply:SetGravity( 0.00001 )
