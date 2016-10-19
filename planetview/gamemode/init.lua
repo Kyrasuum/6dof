@@ -73,37 +73,25 @@ function GM:PlayerSpawn(ply)
     self.BaseClass:PlayerSpawn(ply)
 	ply:SetAllowWeaponsInVehicle( true )
 
-	//ply:SetMoveType( MOVETYPE_VPHYSICS )
-
-	local x0 = -20 -- Define the min corner of the box
-	local y0 = -10
-	local z0 = -5
-
-	local x1 = 20 -- Define the max corner of the box
-	local y1 = 10
-	local z1 = 5
-
-	ply:PhysicsInitConvex( {
-		Vector( x0, y0, z0 ),
-		Vector( x0, y0, z1 ),
-		Vector( x0, y1, z0 ),
-		Vector( x0, y1, z1 ),
-		Vector( x1, y0, z0 ),
-		Vector( x1, y0, z1 ),
-		Vector( x1, y1, z0 ),
-		Vector( x1, y1, z1 )
-	} )
-
-	//ply:SetMoveType( MOVETYPE_VPHYSICS )
+	ply:PhysicsInit(SOLID_CUSTOM)
+	ply:EnableCustomCollisions( true )
 	ply:SetSolid( SOLID_VPHYSICS )
-	ply:SetCollisionGroup(COLLISION_GROUP_PLAYER)
+	ply:SetCollisionGroup(COLLISION_GROUP_INTERACTIVE)
 	ply:GetPhysicsObject():Wake()
 	ply:GetPhysicsObject():EnableMotion( true )
-	ply:EnableCustomCollisions( true )
-	
+	ply:GetPhysicsObject():EnableCollisions( true )
+	ply:AddCallback("PhysicsCollide",plyCollis)
+
+	ply:SetSolidFlags(19)
+	ply:SetMoveType( MOVETYPE_VPHYSICS )
+
     ply:SetGravity( 0.00001 )
     ply:SetWalkSpeed( 325 )  
 	ply:SetRunSpeed( 325 )
+end
+
+function plyCollis( ply, data )
+	print("COLLIDING")
 end
 
 --no gravity on props

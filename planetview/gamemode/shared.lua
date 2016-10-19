@@ -57,7 +57,7 @@ function GM:PlayerNoClip( ply, toggle )
 			ply:SetAllowFullRotation(false)
 		else
 			//change movement type
-			ply:SetMoveType( MOVETYPE_WALK )
+			ply:SetMoveType( MOVETYPE_VPHYSICS )
 			ply:SetAllowFullRotation(true)
 		end
 	else
