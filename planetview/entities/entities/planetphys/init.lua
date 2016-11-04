@@ -10,16 +10,16 @@ include("shared.lua")
 //grab values from map
 function ENT:KeyValue( key, value )
 	if ( key == "type" ) then
-		self.ptype = value || "planet"
+		self:SetNWString("type",value)
 	end
 	if ( key == "radius" ) then
-		self.prad = tonumber(value,10) || 1
+		self:SetNWInt("radius",tonumber(value,10))
 	end
 	if ( key == "mass" ) then
-		self.pmass = tonumber(value,10) || 1
+		self:SetNWInt("mass",tonumber(value,10))
 	end
 	if ( key == "atmosphere" ) then
-		self.atmos = tonumber(value,10) || prad
+		self:SetNWInt("atmosphere",tonumber(value,10))
 	end
 	if ( key == "Name" ) then
 		self:SetName(value)
@@ -31,7 +31,7 @@ end
 
 --main loop
 function ENT:Think()	
-	for k, v in pairs( ents.FindInSphere( self:GetPos(), self.prad ) ) do
+	for k, v in pairs( ents.FindInSphere( self:GetPos(), self:GetNWInt("radius") ) ) do
 		//Finds the super parent
 		parent = v:GetParent()
 		while(parent != NULL && parent != nil && parent:IsValid()) do
@@ -45,7 +45,7 @@ function ENT:Think()
 			--apply gravity
 			--applies gravity to the center of mass, scaled by the object's mass and towards the local planetoid.
 			--this assumes the planetoid is at our center.
-			mult = GetConVar("planetview_gravConst"):GetFloat() * self.pmass / (self:GetPos() - v:GetPos()):Length()^2
+			mult = GetConVar("planetview_gravConst"):GetFloat() * self:GetNWInt("mass") / (self:GetPos() - v:GetPos()):Length()^2
 			direction = (self:GetPos() - v:GetPos()):GetNormalized()
 			if (v:GetClass() != "pcam" && v:GetClass() != "pdummy") then
 				if (v:IsPlayer()) then

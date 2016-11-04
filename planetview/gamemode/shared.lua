@@ -35,18 +35,6 @@ function GM:GetGameDescription()
 	return "Planetview is a child of spacebuild featuring realistic spherical planets"
 end
 
-//Decides if we should play (falling) animation
-function GM:HandlePlayerVaulting( ply, vel )
-	//maybe do more stuff later
-	return false
-end
-
-//Decides if we should play (noclip) animation
-function GM:HandlePlayerNoClipping( ply, vel )
-	//maybe do more stuff later
-	return false
-end
-
 --no flying for guests
 function GM:PlayerNoClip( ply, toggle )
 	//Only admin can noclip
@@ -57,7 +45,7 @@ function GM:PlayerNoClip( ply, toggle )
 			ply:SetAllowFullRotation(false)
 		else
 			//change movement type
-			ply:SetMoveType( MOVETYPE_VPHYSICS )
+			ply:SetMoveType( MOVETYPE_WALK )
 			ply:SetAllowFullRotation(true)
 		end
 	else
@@ -106,15 +94,16 @@ end
 //library function for nearest entity
 //--------------------------------------------------------------------------
 function FindNearestEntity( className, src, range )
-	if (!IsValid(src)) then return src end
-    local nearestEnt;
-    for i, entity in ipairs( ents.FindByClass( className ) ) do
-        local distance = src:GetPos():Distance( entity:GetPos() );
-        if( distance <= range ) then
-            nearestEnt = entity;
-            range = distance; 
-        end
-    end
+	local nearestEnt = nil
+	if (IsValid(src)) then
+	    for i, entity in ipairs( ents.FindByClass( className ) ) do
+	        local distance = src:GetPos():Distance( entity:GetPos() );
+	        if( distance <= range ) then
+	            nearestEnt = entity;
+	            range = distance; 
+	        end
+	    end
+	end
     return nearestEnt, range;
 end
 
@@ -122,17 +111,15 @@ end
 //library function for checking if in atmosphere
 //--------------------------------------------------------------------------
 function InAtmosphere( src )
+	if (!src:IsPlayer()) then return false end
 	ent,range = FindNearestEntity( "planetphys", src, GetConVar("planetview_playerGravRange"):GetInt() )
 	//Update sound effects
-    if range > ent:GetTable().atmos then
-    	if (src:IsPlayer()) then
-    		src:SetDSP(31)//Space effect
-    	end
+    if !IsValid(ent) || range==GetConVar("planetview_playerGravRange"):GetInt()
+    	|| range > ent:GetNWInt("atmosphere") then
+    	src:SetDSP(31)//Space effect
     	return false
     else
-    	if (src:IsPlayer()) then
-    		src:SetDSP(1)//Normal effect
-    	end
+    	src:SetDSP(1)//Normal effect
     	return true
     end
 end
@@ -167,6 +154,7 @@ end);
 hook.Add("PlayerDeath", "drop weapon after death", function(ply)
 	ply:ShouldDropWeapon(false);
 end);
+
 /*//==================================================================================////
 									Overriding Functions Here
 								Grav Hull Designator inspired pattern
@@ -262,16 +250,13 @@ function _R.Entity:OnGround()
 	
 end
 */
+
 //Setters
 function _R.Player:SetEyeAngles( ang )
 	//We dont know if they are using real values to set this.  Can be dangerious
 	self:RealSetEyeAngles( ang )
 end
 
-function _R.Entity:SetAngles( ang )
-	if (!ang || !IsValid(ang)) then return Angle(0,0,0) end
-	if (!self:IsPlayer()) then self:RealSetAngles( ang ) end
-end
 //Permissions
 function _R.Player:IsAdmin()
 	return (self:Team() > 3)

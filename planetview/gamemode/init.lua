@@ -30,33 +30,28 @@ end
 function GM:PlayerLoadout( ply )
 	ply:StripWeapons()
 	if (ply:Team() >= 2) then //Guest
-		/*
-        ply:Give( "weapon_physcannon" )
-		ply:Give( "weapon_physgun" )
+        ply:Give( "swep_physgun" )
+		ply:Give( "swep_gravgun" )
 		ply:Give( "gmod_tool" )
-		*/
     end
 	if (ply:Team() >= 3) then //Member
-		/*
-		ply:Give( "weapon_pistol" )
-		ply:Give( "weapon_smg1" )
-		ply:Give( "weapon_crowbar" )
+		ply:Give( "swep_pistol" )
+		ply:Give( "swep_smg1" )
+		ply:Give( "swep_crowbar" )
 	 
 		ply:GiveAmmo( 999, "pistol" )
 		ply:GiveAmmo( 999, "smg1" )
-		*/
     end
 	if (ply:Team() >= 4) then //Admin+
-		/*
-		ply:Give( "weapon_frag" )
-		ply:Give( "weapon_crossbow" )
-		ply:Give( "weapon_shotgun" )
-		ply:Give( "weapon_357" )
-		ply:Give( "weapon_rpg" )
-		ply:Give( "weapon_ar2" )
-	    ply:Give( "gmod_camera" )
-		*/
+		ply:Give( "swep_frag" )
+		ply:Give( "swep_crossbow" )
+		ply:Give( "swep_shotgun" )
+		ply:Give( "swep_357" )
+		ply:Give( "swep_rpg" )
+		ply:Give( "swep_ar2" )
+	    //ply:Give( "gmod_camera" )
     end
+    return true
 end
 
 //Used on initial spawn
@@ -73,25 +68,26 @@ function GM:PlayerSpawn(ply)
     self.BaseClass:PlayerSpawn(ply)
 	ply:SetAllowWeaponsInVehicle( true )
 
-	ply:PhysicsInit(SOLID_CUSTOM)
-	ply:EnableCustomCollisions( true )
-	ply:SetSolid( SOLID_VPHYSICS )
-	ply:SetCollisionGroup(COLLISION_GROUP_INTERACTIVE)
-	ply:GetPhysicsObject():Wake()
-	ply:GetPhysicsObject():EnableMotion( true )
-	ply:GetPhysicsObject():EnableCollisions( true )
-	ply:AddCallback("PhysicsCollide",plyCollis)
+	///*PCAM testing code
+	-- ply:SetRenderMode(RENDERMODE_TRANSALPHA)
+	-- ply:SetColor( Color(0, 0, 0, 0 ) )
 
-	ply:SetSolidFlags(19)
-	ply:SetMoveType( MOVETYPE_VPHYSICS )
+	if (ply:Team() > 1) then
+		if ply:GetNetworkedEntity("plycam") && IsValid( ply:GetNetworkedEntity("plycam") ) then 
+			ply:GetNetworkedEntity("plycam"):Remove()
+		end
+		
+		local pcam = ents.Create("pcam")
+		pcam:SetPos(ply:GetPos())
+		pcam:SetAngles(ply:GetAngles())
+		pcam:SetOwner(ply)
+		pcam:Spawn()
+		ply:SetNetworkedEntity("plycam", pcam)
+	end
 
     ply:SetGravity( 0.00001 )
     ply:SetWalkSpeed( 325 )  
 	ply:SetRunSpeed( 325 )
-end
-
-function plyCollis( ply, data )
-	print("COLLIDING")
 end
 
 --no gravity on props
@@ -190,7 +186,7 @@ function GM:EntityEmitSound( data )
 end
 
 /*//==================================================================================////
-								Whitelisting is done here
+								Whitelisting is done here                               
 *///==================================================================================////
 //Tables of whitelisted items
 local models = {}
@@ -212,9 +208,6 @@ function GM:PlayerSpawnProp( ply, mdl )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
-function GM:PlayerSpawnedProp( ply, string, ent )
-	ent:SetOwner(ply)
-end	
 //Effects
 function GM:PlayerSpawnEffect( ply, mdl )
 	if (ply:IsAdmin()) then return true end
@@ -226,9 +219,6 @@ function GM:PlayerSpawnEffect( ply, mdl )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
-function GM:PlayerSpawnedEffect( ply, string, ent )
-	ent:SetOwner(ply)
-end	
 //NPCS
 function GM:PlayerSpawnNPC( ply, npc, weapon )
 	if (ply:IsAdmin()) then return true end
@@ -240,9 +230,6 @@ function GM:PlayerSpawnNPC( ply, npc, weapon )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. npc);
 	return false//You cant spawn this
 end
-function GM:PlayerSpawnedNPC( ply, ent )
-	ent:SetOwner(ply)
-end	
 //Ragdolls
 function GM:PlayerSpawnRagdoll( ply, mdl, ent )
 	if (ply:IsAdmin()) then return true end
@@ -254,9 +241,6 @@ function GM:PlayerSpawnRagdoll( ply, mdl, ent )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
-function GM:PlayerSpawnedRagdoll( ply, string, ent )
-	ent:SetOwner(ply)
-end	
 //Vehicles
 function GM:PlayerSpawnVehicle( ply, mdl, name, tab )
 	if (ply:IsAdmin()) then return true end
@@ -268,15 +252,11 @@ function GM:PlayerSpawnVehicle( ply, mdl, name, tab )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
-function GM:PlayerSpawnedVehicle( ply, ent )
-	ent:SetOwner(ply)
-end	
 //SWEPs
 function GM:PlayerGiveSWEP( ply, wep, tab )
 	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( weapon ) do
 		if string.find( wep, v ) then
-			tab.Owner = ply
 			tab.AccurateCrosshair = true
 			return true//The model is whitelisted
 		end
@@ -288,17 +268,13 @@ function GM:PlayerSpawnSWEP( ply, wep, tab )
 	if (ply:IsAdmin()) then return true end
 	for _, v in pairs( weapon ) do
 		if string.find( mdl, v ) then
+			tab.AccurateCrosshair = true
 			return true//The model is whitelisted
 		end
 	end
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
-function GM:PlayerSpawnedSWEP( ply, ent )
-	ent:SetOwner(ply)
-	ent:GetTable().AccurateCrosshair = true
-	ent:GetTable().Owner = ply
-end	
 //SENTs
 function GM:PlayerSpawnSENT( ply , mdl )
 	if (ply:IsAdmin()) then return true end
@@ -310,6 +286,3 @@ function GM:PlayerSpawnSENT( ply , mdl )
 	ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to spawn " .. mdl);
 	return false//You cant spawn this
 end
-function GM:PlayerSpawnedSENT( ply, ent )
-	ent:SetOwner(ply)
-end	

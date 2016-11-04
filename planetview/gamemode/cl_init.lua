@@ -34,46 +34,6 @@ function set_team()
 	end
 end
 concommand.Add( "sb_start", set_team )
-//--------------------------------------------------------------------------
-//Create debug bounding box
-//--------------------------------------------------------------------------
-function GM:PreDrawViewModel(vm, weap)
-	local ply = LocalPlayer()
-	if(GetConVar( "planetview_debug" ):GetInt() == 1) then 
-		local min, max = ply:WorldSpaceAABB()
-			
-		//Axis-Oriented Bounding box
-		//Creating vectors for each point
-		local aaa = min
-		local aab = Vector(min.x, min.y, max.z)
-		local abb = Vector(min.x, max.y, max.z)
-		local aba = Vector(min.x, max.y, min.z)
-		local bab = Vector(max.x, min.y, max.z)
-		local baa = Vector(max.x, min.y, min.z)
-		local bba = Vector(max.x, max.y, min.z)
-		local bbb = max
-		
-		//12 lines make up a cube
-		//min corner
-		render.SetMaterial(Material( "cable/redlaser" ) )
-		render.DrawBeam(aaa, aab,3,0,0, Color(255,255,255,255))
-		render.DrawBeam(aaa, baa,3,0,0, Color(255,255,255,255))
-		render.DrawBeam(aaa, aba,3,0,0, Color(255,255,255,255))
-		//max corner
-		render.DrawBeam(bbb, bba,3,0,0, Color(255,255,255,255))
-		render.DrawBeam(bbb, bab,3,0,0, Color(255,255,255,255))
-		render.DrawBeam(bbb, abb,3,0,0, Color(255,255,255,255))
-		//remaining lines
-		render.DrawBeam(aab, abb,3,0,0, Color(255,255,255,255))
-		render.DrawBeam(aab, bab,3,0,0, Color(255,255,255,255))
-		
-		render.DrawBeam(baa, bab,3,0,0, Color(255,255,255,255))
-		render.DrawBeam(baa, bba,3,0,0, Color(255,255,255,255))
-		
-		render.DrawBeam(aba, bba,3,0,0, Color(255,255,255,255))
-		render.DrawBeam(aba, abb,3,0,0, Color(255,255,255,255))
-	end
-end
 
 //--------------------------------------------------------------------------
 //Adjusts Viewmodel
@@ -86,7 +46,7 @@ function GM:CalcViewModelView( wep, vm, oldPos, oldAng, pos, ang )
 	// Planetview adjustment
 	if (ply != nil) then
 		//Only change things if enabled and viewing from player
-		if( ply:GetMoveType() != MOVETYPE_NOCLIP && ply:GetViewEntity() == ply ) then 
+		if( ply:GetMoveType() != MOVETYPE_NOCLIP && ply:GetViewEntity() == ply && InAtmosphere(ply) ) then 
 			//Edit viewmodel here
 			vm_angles, vm_origin = CalcRotation( ply, vm_origin, vm_angles )
 		end
@@ -120,7 +80,7 @@ function GM:CalcView(ply, Origin, Angles, FieldOfView)
 	local NewAngles, NewOrigin, CorrecAng, PosAng = CalcRotation( ply, Origin, Angles )
 
 	//Check if enabled
-	if ( ply:GetMoveType() != MOVETYPE_NOCLIP ) then
+	if ( ply:GetMoveType() != MOVETYPE_NOCLIP && InAtmosphere(ply) ) then
 		//Rotate Player model
 		ply:SetAllowFullRotation(true)
 		ply:RealSetAngles( CorrecAng )
@@ -184,6 +144,7 @@ net.Receive( "Sound", function( len )
 	sound.Play( data.SoundName, data.Entity:GetPos(), data.SoundLevel, data.Pitch, data.Volume )
 end )
 
+
 //Space crashing damage
 function RammingDmg( ent1, ent2 )
 	//Relative velocity
@@ -203,7 +164,7 @@ function RammingDmg( ent1, ent2 )
 		ent1:AddFlag(FL_ONGROUND)
 	end
 end
-hook.Add( "ShouldCollide", "RammingDmg", RammingDmg )
+//hook.Add( "ShouldCollide", "RammingDmg", RammingDmg )
 
 //Space chat rules
 function GM:OnPlayerChat( src, txt, bool, booldead )
@@ -244,3 +205,28 @@ function GM:OnPlayerChat( src, txt, bool, booldead )
 	//Block normal chat
 	return true
 end
+
+//3d name above player's head
+function DrawName( ply )
+	if ( !IsValid( ply ) ) then return end
+	if ( ply == LocalPlayer() ) then return end -- Don't draw a name when the player is you
+	if ( !ply:Alive() ) then return end -- Check if the player is alive
+
+	local Distance = LocalPlayer():GetPos():Distance( ply:GetPos() ) --Get the distance between you and the player
+
+	if ( Distance < 1000 ) then --If the distance is less than 1000 units, it will draw the name
+
+		local offset = Vector( 0, 0, 85 )
+		local ang = LocalPlayer():EyeAngles()
+		local pos = ply:GetPos() + offset + ang:Up()
+
+		ang:RotateAroundAxis( ang:Forward(), 90 )
+		ang:RotateAroundAxis( ang:Right(), 90 )
+
+
+		cam.Start3D2D( pos, Angle( 0, ang.y, 90 ), 0.25 )
+			draw.DrawText( ply:GetName(), "HudSelectionText", 2, 2, team.GetColor( ply:Team() ), TEXT_ALIGN_CENTER )
+		cam.End3D2D()
+	end
+end
+hook.Add( "PostPlayerDraw", "DrawName", DrawName )
