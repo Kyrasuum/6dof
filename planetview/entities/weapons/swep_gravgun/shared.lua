@@ -430,27 +430,13 @@ function SWEP:Visual()
 		
 		local trace = self.Owner:GetEyeTrace()
 		
-		local effectdata = EffectData()
-		effectdata:SetOrigin( trace.HitPos )
-		effectdata:SetStart( self.Owner:GetShootPos() )
-		effectdata:SetAttachment( 1 )
-		effectdata:SetEntity( self.Weapon )
-		util.Effect( "PhyscannonTracer", effectdata )
-		--local e = EffectData()
-		--e:SetEntity(trace.Entity)
-		--e:SetMagnitude(30)
-		--e:SetScale(30)
-		--e:SetRadius(30)
-		--util.Effect("TeslaHitBoxes", e)------------------------------------------------------------------------------------------------------------
-		--trace.Entity:EmitSound("Weapon_StunStick.Activate")
-		
 		local e = EffectData()
 		e:SetMagnitude(30)
 		e:SetScale(30)
 		e:SetRadius(30)
 		e:SetOrigin(trace.HitPos)
 		e:SetNormal(trace.HitNormal)
-		--util.Effect("PhyscannonImpact", e)
+		util.Effect("PhyscannonImpact", e)
 		util.Effect("ManhackSparks", e)
 	end
 	
@@ -525,32 +511,17 @@ function SWEP:OwnerChanged()
 
 function SWEP:Think()
 	if CLIENT then
-		if !self.Weapon:GetNWBool("Glow") then
-			if !self.Owner:LookupBone("ValveBiped.Bip01_R_Hand") then return end
-			local dlight = DynamicLight("lantern_"..self:EntIndex())
-			if dlight then
-				dlight.Pos = self.Owner:GetBonePosition(self.Owner:LookupBone("ValveBiped.Bip01_R_Hand"))
-				dlight.r = 200
-				dlight.g = 255
-				dlight.b = 255
-				dlight.Brightness = 0.1
-				dlight.Size = 70
-				dlight.DieTime = CurTime() + .0001
-				--dlight.Style = 0
-			end
-		else
-			if !self.Owner:LookupBone("ValveBiped.Bip01_R_Hand") then return end
-			local dlight = DynamicLight("lantern_"..self:EntIndex())
-			if dlight then
-				dlight.Pos = self.Owner:GetBonePosition(self.Owner:LookupBone("ValveBiped.Bip01_R_Hand"))
-				dlight.r = 255
-				dlight.g = 255
-				dlight.b = 255
-				dlight.Brightness = 0.3
-				dlight.Size = 100
-				dlight.DieTime = CurTime() + .0001
-				--dlight.Style = 0
-			end
+		if !self.Owner:LookupBone("ValveBiped.Bip01_R_Hand") then return end
+		local dlight = DynamicLight("lantern_"..self:EntIndex())
+		if dlight then
+			dlight.Pos = self.Owner:GetBonePosition(self.Owner:LookupBone("ValveBiped.Bip01_R_Hand"))
+			dlight.r = 200
+			dlight.g = 255
+			dlight.b = 255
+			dlight.Brightness = 0.1
+			dlight.Size = 70
+			dlight.DieTime = CurTime() + .0001
+			--dlight.Style = 0
 		end
 	end
 		local trace = self.Owner:GetEyeTrace()

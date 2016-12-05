@@ -2,10 +2,6 @@
 This File contains library functions, overrides, or other
 reference material to support server and client.
 */
-//Scoreboard includes
-include( "qmod/qmod.lua" )
-
-
 //defines
 GM.Name		= "planetview"
 GM.Author	= "Architecht, Fang"
@@ -15,13 +11,6 @@ DeriveGamemode( "sandbox" )
 
 GM.AllowAutoTeam = false
 GM.AllowSpectating = true
-
-function ChangeMyTeam( ply, cmd, args )
-	local _team = args[ 1 ] && tonumber( args[ 1 ] ) || 0;
-	ply:SetTeam( _team );
-	ply:Spawn( );
-end
-concommand.Add( "set_team", ChangeMyTeam );
 
 //teams
 team.SetUp( 1, "Joining", Color( 0, 0, 0, 255) ) 
@@ -64,7 +53,11 @@ function CalcRotation( ply, Origin, EyeAng )
 	if (!IsValid(EyeAng)) then EyeAng = ply:RealEyeAngles() end
 
 	//Calc Variables
-	local PlanetPos = GetPlanetPos(ply)
+	local PlanetPos = GetPlanetPos(ply)//Planet normal to player
+	if !InAtmosphere(ply) then
+		PlanetPos = ply:GetNetworkedAngle("RotAng")
+	end
+
 	local LocalPos = (ply:RealGetPos()-PlanetPos)
 	local RollAng = Vector(-LocalPos.y,math.abs(LocalPos.z),0):AngleEx(Vector(0,0,0)).y -90
 	local PitchAng = Vector(-LocalPos.x,LocalPos.z,0):AngleEx(Vector(0,0,0)).y -90
@@ -94,16 +87,18 @@ end
 //library function for nearest entity
 //--------------------------------------------------------------------------
 function FindNearestEntity( className, src, range )
-	local nearestEnt = nil
+	nearestEnt = nil
+	pos = Vector(0,0,0)
 	if (IsValid(src)) then
-	    for i, entity in ipairs( ents.FindByClass( className ) ) do
-	        local distance = src:GetPos():Distance( entity:GetPos() );
-	        if( distance <= range ) then
-	            nearestEnt = entity;
-	            range = distance; 
-	        end
-	    end
+		pos = src:GetPos()
 	end
+    for i, entity in ipairs( ents.FindByClass( className ) ) do
+        local distance = pos:Distance( entity:GetPos() );
+        if( distance <= range ) then
+            nearestEnt = entity;
+            range = distance; 
+        end
+    end
     return nearestEnt, range;
 end
 
@@ -112,10 +107,12 @@ end
 //--------------------------------------------------------------------------
 function InAtmosphere( src )
 	if (!src:IsPlayer()) then return false end
-	ent,range = FindNearestEntity( "planetphys", src, GetConVar("planetview_playerGravRange"):GetInt() )
+	ent,range = FindNearestEntity( "planetphys", src, 16384 )
 	//Update sound effects
-    if !IsValid(ent) || range==GetConVar("planetview_playerGravRange"):GetInt()
-    	|| range > ent:GetNWInt("atmosphere") then
+	if !IsValid(ent) then
+		return true
+	end
+    if range==16384 || range > ent:GetNWInt("atmosphere") then
     	src:SetDSP(31)//Space effect
     	return false
     else
@@ -129,19 +126,19 @@ end
 //--------------------------------------------------------------------------
 function GetPlanetPos( src )
 	if (!IsValid(src)) then return Vector(0,0,0) end
-	local ent = FindNearestEntity( "planetphys", src, GetConVar("planetview_playerGravRange"):GetInt() )
+	local ent = FindNearestEntity( "planetphys", src, 16384 )
 	if (ent != nil && ent != NULL ) then
 		return ent:GetPos()
 	else
-		return src:GetPos()
+		return (src:GetPos() - Vector(0,0,1))
 	end
 end
 
 function GM:Initialize()
 	//Convars
+	CreateConVar("planetview_enabled", 0)//tells us if any planets exist
 	CreateConVar("planetview_gravConst", 0.00000000006674)//This scales all gravity interaction
 	CreateConVar("planetview_playerMass", 1)//how heavy is player
-	CreateConVar("planetview_playerGravRange", 16834)//how far does player search for a nearby planet
 	CreateConVar("planetview_debug", 0)//prints messages and makes debugging models visable
 	CreateConVar("planetview_chatDist", 10)//Coefficent for how far should player chat be fine
 end

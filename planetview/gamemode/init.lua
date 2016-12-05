@@ -4,9 +4,6 @@ Good hooks for server side edits
 */
 AddCSLuaFile( "cl_init.lua" ) 
 AddCSLuaFile( "shared.lua" )
-//Scoreboard
-AddCSLuaFile( "qmod/qmod.lua" )
-
 include( 'shared.lua' )
 include( 'specialchars.lua' )
 //Network cacheing
@@ -57,7 +54,6 @@ end
 //Used on initial spawn
 function unspectate( ply ) 
 	ply:UnSpectate()
-	ply:Spawn()
 
 	player_exists( ply ) 
 end
@@ -72,7 +68,7 @@ function GM:PlayerSpawn(ply)
 	-- ply:SetRenderMode(RENDERMODE_TRANSALPHA)
 	-- ply:SetColor( Color(0, 0, 0, 0 ) )
 
-	if (ply:Team() > 1) then
+	--[[ if (ply:Team() > 1) then
 		if ply:GetNetworkedEntity("plycam") && IsValid( ply:GetNetworkedEntity("plycam") ) then 
 			ply:GetNetworkedEntity("plycam"):Remove()
 		end
@@ -83,17 +79,31 @@ function GM:PlayerSpawn(ply)
 		pcam:SetOwner(ply)
 		pcam:Spawn()
 		ply:SetNetworkedEntity("plycam", pcam)
-	end
+	end--]] 
 
-    ply:SetGravity( 0.00001 )
+	//Player rotation manip
+	ply:SetNetworkedAngle( "RotAng", Angle(0,0,0) )
+
     ply:SetWalkSpeed( 325 )  
 	ply:SetRunSpeed( 325 )
+
+	if (GetConVar("planetview_enabled"):GetInt() == 1) then
+		ply:SetGravity( 0.00001 )
+	end
 end
 
 --no gravity on props
 function GM:InitPostEntity()
-	physenv.SetGravity( Vector( 0, 0, 0 ) )
-	physenv.SetAirDensity( 0 )
+	src = NULL
+	ent,range = FindNearestEntity( "planetphys", src, 16384 )
+	if(IsValid(ent))then
+		GetConVar("planetview_enabled"):SetInt(1)
+	end
+
+	if (GetConVar("planetview_enabled"):GetInt() == 1) then
+		physenv.SetGravity( Vector( 0, 0, 0 ) )
+		physenv.SetAirDensity( 0 )
+	end
 end
 
 //Needed to sync shooting
