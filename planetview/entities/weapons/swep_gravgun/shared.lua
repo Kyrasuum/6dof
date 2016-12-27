@@ -292,6 +292,7 @@ function SWEP:AllowedClass()
 			or class == "prop_physics_multiplayer"
 			or class == "prop_physics"
 			or class == "prop_dynamic"
+			or class == "prop_mesh"
 			or class == "func_brush"	then
 		return true
 	else

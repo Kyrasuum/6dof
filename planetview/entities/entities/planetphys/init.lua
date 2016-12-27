@@ -1,33 +1,10 @@
 /*
 This entity handles the gravity from planets
-Keyvalues from map are handled here
 */
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 
 include("shared.lua")
-
-//grab values from map
-function ENT:KeyValue( key, value )
-	if ( key == "type" ) then
-		self:SetNWString("type",value)
-	end
-	if ( key == "radius" ) then
-		self:SetNWInt("radius",tonumber(value,10))
-	end
-	if ( key == "mass" ) then
-		self:SetNWInt("mass",tonumber(value,10))
-	end
-	if ( key == "atmosphere" ) then
-		self:SetNWInt("atmosphere",tonumber(value,10))
-	end
-	if ( key == "Name" ) then
-		self:SetName(value)
-	end
-	if ( key == "parent" ) then
-		self:SetParent(value)
-	end
-end
 
 --main loop
 function ENT:Think()	
@@ -56,8 +33,4 @@ function ENT:Think()
 			end
 		end
 	end
-end
-
-function ENT:OnRemove()
-  --nothing to do yet
 end

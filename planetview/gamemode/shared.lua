@@ -20,12 +20,12 @@ team.SetUp( 4, "Admin", Color( 50, 50, 255, 255) )
 team.SetUp( 5, "SuperAdmin", Color( 10, 10, 200, 255) ) 
 team.SetUp( 6, "Owner", Color( 255, 255, 255, 255) ) 
 
-function GM:GetGameDescription()
+hook.Add( "GetGameDescription", "PlanetviewDesc", function()
 	return "Planetview is a child of spacebuild featuring realistic spherical planets"
-end
+end)
 
 --no flying for guests
-function GM:PlayerNoClip( ply, toggle )
+hook.Add( "PlayerNoClip", "NoClipPermissions", function( ply, toggle )
 	//Only admin can noclip
 	if ply:IsAdmin() then
 		if toggle then
@@ -41,6 +41,14 @@ function GM:PlayerNoClip( ply, toggle )
 		ply:PrintMessage(HUD_PRINTCENTER,"You're not allowed to noclip");
 	end
 	return false//Never do normal noclip
+end)
+
+function atmos_Outside( pos )
+	return true;
+end
+
+function atmos_outside( pos )
+	return atmos_Outside( pos );
 end
 
 //--------------------------------------------------------------------------
@@ -134,23 +142,23 @@ function GetPlanetPos( src )
 	end
 end
 
-function GM:Initialize()
+hook.Add( "Initialize", "ConvarStar", function()
 	//Convars
 	CreateConVar("planetview_enabled", 0)//tells us if any planets exist
 	CreateConVar("planetview_gravConst", 0.00000000006674)//This scales all gravity interaction
 	CreateConVar("planetview_playerMass", 1)//how heavy is player
 	CreateConVar("planetview_debug", 0)//prints messages and makes debugging models visable
 	CreateConVar("planetview_chatDist", 10)//Coefficent for how far should player chat be fine
-end
+end)
 
 //Player death here
 hook.Add("DoPlayerDeath", "drop weapon after death", function(ply)
 	ply:ShouldDropWeapon(true);
-end);
+end)
  
 hook.Add("PlayerDeath", "drop weapon after death", function(ply)
 	ply:ShouldDropWeapon(false);
-end);
+end)
 
 /*//==================================================================================////
 									Overriding Functions Here
@@ -158,6 +166,14 @@ end);
 *///==================================================================================////
 _R = debug.getregistry()
 
+//atmos functions
+function _R.Player:AtmosAdmin()
+	return self:IsSuperAdmin() or self:IsAdmin();
+end
+
+function _R.Player:AtmosVIP()
+	return self:IsUserGroup( "vip" ) or self:IsUserGroup( "moderator" ) or self:IsUserGroup( "donator" );
+end
 //Storing the orginals
 //Getters
 if !_R.Player.RealShootPos then
