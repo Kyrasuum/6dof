@@ -1,8 +1,0 @@
-"Modulate"
-{
-	"$znearer" 1
-	"$basetexture" "VGUI/spacevisor/crosshair_green"
-	"$translucent" "1"
-	"$additive" "1"
-	"$mod2x" "1"
-}
