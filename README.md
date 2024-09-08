@@ -16,3 +16,7 @@ I recommend playing this on maps intended for 6dof as otherwise results can be u
 -- Provide a seemless experience walking on surface of spherical planets
 -- Provide ability for players to control their rotation in zero g environments
 -- Simulate gravity due to spherical bodies
+
+## Credit:
+https://github.com/JWalkerMailly/glua-quaternion -- for their excellent quaternion library
+https://github.com/alex-suspicious -- for their wall walking addon, the basis for this project

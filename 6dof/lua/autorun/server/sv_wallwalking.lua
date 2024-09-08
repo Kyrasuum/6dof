@@ -7,23 +7,27 @@ function calcAngles( ply )
 	local Planet,_ = FindNearestEntity( "planetphys", ply, 65535 )
 	local PlanetPos = Vector()
 	local LocalPos = ply:real_GetPos()
+	local PlyRot = ply:GetWAngles()
     local ViewAngles = ply:real_EyeAngles()
 	local NewAngle = Angle()
 
-	-- Calculate players rotation
+	-- find normal position from nearest planet core offset
 	if( Planet ~= nil ) then
-		PlanetPos = Planet:GetPos()
+		Center = Planet:GetPos()
 	end 
-	local PlanetNormal = (LocalPos - PlanetPos):GetNormalized()
+	local Normal = (LocalPos - Center):GetNormalized()
 
-	local PlyUp = Angle(0, ViewAngles.y, 0):Up()
-	local Axis = PlyUp:Cross(PlanetNormal):GetNormalized()
-	local Dot = PlyUp:Dot(PlanetNormal)
+	-- find shortest arc for quaternion rotation
+	local PlyUp = PlyRot:Up()
+	local Axis = PlyUp:Cross(Normal):GetNormalized()
+	local Dot = PlyUp:Dot(Normal)
 	local Ang = math.deg(math.acos(math.Clamp(Dot, -1, 1)))
+
+	-- calculate rotation from quaternion
 	local Quat = Quaternion()
 	Quat:SetAngleAxis(Ang, Axis)
-
-	NewAngle = Quat:Angle()
+	local DifAngle = Quat:Angle()
+	NewAngle = PlyRot + DifAngle
 
 	-- rollover for angles
 	NewAngle:Normalize()
@@ -208,7 +212,7 @@ end)
 hook.Add( "PlayerButtonDown", "CrawlToggler", function( ply, button )
 	-- send network event for crouch
 	if( button == 19 ) then
-		ply.WantRotate = ~ply.WantRotate
+		ply.WantRotate = !ply.WantRotate
 		resetHull(ply)
 
 		net.Start( "WRotateStatus" )
