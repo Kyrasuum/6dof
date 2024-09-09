@@ -1,7 +1,7 @@
 function calcAngles( ply )
 	-- get input variables for calculating players world angle
 	local Planet,_ = FindNearestGravBody( ply, 65535 )
-	local PlanetPos = Vector()
+	local Center = Vector()
 	local LocalPos = ply:real_GetPos()
 	local PlyRot = ply:GetWAngles()
     local ViewAngles = ply:real_EyeAngles()
