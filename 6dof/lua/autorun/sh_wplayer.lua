@@ -1,19 +1,8 @@
 AddCSLuaFile()
 
-local meta = FindMetaTable("Player") --Get the meta table of player
+local PLAYER = FindMetaTable("Player") --Get the meta table of player
 
-function meta:InAtmosphere()
-	ent, range = FindNearestEntity( "planetphys", self, 65535 )
-    if range > ent:GetTable().atmos then
-		src:SetDSP(31) -- Space effect
-    	return false
-    else
-		src:SetDSP(1) -- Normal effect
-    	return true
-    end
-end
-
-function meta:GetLocalVelocity()
+function PLAYER:GetLocalVelocity()
 	-- returns the players local velocity
 	EyeAngles = self:GetAngles()
 	EyeAngles.pitch = 0
@@ -21,8 +10,7 @@ function meta:GetLocalVelocity()
 	return LocalVel
 end
 
-
-function meta:GetLocalPos()
+function PLAYER:GetLocalPos()
 	-- return the players local position
 	EyeAngles = self:GetAngles()
 	EyeAngles.pitch = 0
@@ -30,7 +18,7 @@ function meta:GetLocalPos()
 	return LocalVel
 end
 
-function meta:GetWAngles()
+function PLAYER:GetWAngles()
 	-- returns the players world angles
 	if( self.WAngles == nil ) then self.WAngles = Angle(0,0,0) end
 	if( self.Delay == nil ) then self.Delay = 0 end
@@ -38,32 +26,38 @@ function meta:GetWAngles()
 	return self.WAngles
 end
 
-function meta:SetWAngles( Wangle )
+function PLAYER:SetWAngles( Wangle )
 	-- sets the world angles for the player
 	if( self.Delay == nil ) then self.Delay = 0 end
-	if( CLIENT and CurTime() > self.Delay ) then
+	if( CurTime() > self.Delay ) then
 		self.Delay = CurTime() + 0.1
-		net.Start( "WangleReciver" )
-			net.WriteAngle( Wangle )
-		net.SendToServer()
+		if ( CLIENT ) then
+			net.Start( "WangleReciver" )
+				net.WriteAngle( Wangle )
+			net.SendToServer()
+		else
+			net.Start( "WangleSender" )
+				net.WriteEntity( self )
+				net.WriteAngle( Wangle )
+			net.Broadcast()
+		end
 	end
 
 	self.WAngles = Wangle
 end
 
-
-function meta:GetWDir()
+function PLAYER:GetWDir()
 	-- get the player world look direction
 	if( self.WDir == nil ) then self.WDir = Vector(0,0,0) end
 	return self.WDir
 end
 
-function meta:SetWDir( NewWDir )
+function PLAYER:SetWDir( NewWDir )
 	-- sets the players world look direction
 	self.WDir = NewWDir
 end
 
-function meta:ToLocal(VectorFrom)
+function PLAYER:ToLocal(VectorFrom)
 	-- converts a vector from world to local to player
 	EyeAngles = self:GetAngles()
 	EyeAngles.pitch = 0
@@ -71,7 +65,7 @@ function meta:ToLocal(VectorFrom)
 	return LocalVectorFrom
 end
 
-function meta:GetLocalVelocityPitch()
+function PLAYER:GetLocalVelocityPitch()
 	-- returns the players local velocity
 	EyeAngles = self:GetAngles()
 	LocalVel = WorldToLocal( self:GetVelocity(), Angle(0,0,0) , Vector(0,0,0), EyeAngles )

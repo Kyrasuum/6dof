@@ -1,10 +1,6 @@
-util.AddNetworkString( "WangleReciver" )
-util.AddNetworkString( "WangleSender" )
-util.AddNetworkString( "WRotateStatus" )
-
 function calcAngles( ply )
 	-- get input variables for calculating players world angle
-	local Planet,_ = FindNearestEntity( "planetphys", ply, 65535 )
+	local Planet,_ = FindNearestGravBody( ply, 65535 )
 	local PlanetPos = Vector()
 	local LocalPos = ply:real_GetPos()
 	local PlyRot = ply:GetWAngles()
@@ -17,27 +13,27 @@ function calcAngles( ply )
 	end 
 	local Normal = (LocalPos - Center):GetNormalized()
 
-	-- find shortest arc for quaternion rotation
+	-- find quaternion rotation
 	local PlyUp = PlyRot:Up()
-	local Axis = PlyUp:Cross(Normal):GetNormalized()
-	local Dot = PlyUp:Dot(Normal)
-	local Ang = math.deg(math.acos(math.Clamp(Dot, -1, 1)))
+	local PlyFwd = PlyRot:Forward()
+	if( PlyUp:Distance( Normal ) > 0.01 ) then
+		-- calculate a forward vector parallel to surface
+		local Right = PlyFwd:Cross(Normal)
+		local Forward = Normal:Cross(Right)
+		
+		-- create quaternion from normal and forward
+		local Quat = Quaternion()
+		Quat:SetDirection(Forward, Normal)
 
-	-- calculate rotation from quaternion
-	local Quat = Quaternion()
-	Quat:SetAngleAxis(Ang, Axis)
-	local DifAngle = Quat:Angle()
-	NewAngle = PlyRot + DifAngle
+		-- calculate rotation from quaternion
+		NewAngle = Quat:Angle()
 
-	-- rollover for angles
-	NewAngle:Normalize()
+		-- rollover for angles
+		NewAngle:Normalize()
 
-	-- broadcast new player angles
-	ply:SetWAngles( NewAngle )
-	net.Start( "WangleSender" )
-		net.WriteEntity( ply )
-	    net.WriteAngle( NewAngle )
-	net.Broadcast()
+		-- broadcast new player angles
+		ply:SetWAngles( NewAngle )
+	end
 end
 
 function stickToProp( ply )
@@ -144,79 +140,3 @@ hook.Add( "Tick", "ServerLoop", function()
 		-- updateHull( v )
 	end
 end )
-
-
-hook.Add( "Move", "CustomMove", function( ply, mv )
-	if( !ply.WantRotate ) then
-		return mv
-	end
-
-	-- check for crouch
-	if( ply.Crouch == nil ) then ply.Crouch = 0 end
-	ply.Crouch = 65
-	if( ply:KeyDown(IN_DUCK) ) then
-		ply.Crouch = 40
-	end
-
-	local ang = mv:GetMoveAngles()
-	local pos = mv:GetOrigin()
-	local vel = mv:GetVelocity()
-
-	-- calculate speed
-	local speed = 0.0025 * FrameTime()
-	if ( mv:KeyDown( IN_SPEED ) ) then speed = speed * 2 end
-
-	-- find ground
-	if( ply.newUpDir == nil ) then ply.newUpDir = Vector() end
-	ply.newUpDir = ply:GetWAngles():Up()
-	GroundTrace = util.QuickTrace( ply:GetPos() + ply.newUpDir*32 , ply.newUpDir*-60 , ply )
-	DistToGround = GroundTrace.HitPos:Distance( GroundTrace.StartPos )
-	
-	-- adding gravity
-	if( ply.vel == nil ) then ply.vel = Vector() end
-
-	local _,PlanetDist = FindNearestEntity( "planetphys", ply, 65535 )
-	ply.vel = ply.vel - ( ply.newUpDir*(1 - PlanetDist/65535)*(50)*(DistToGround/38 - 1) )*FrameTime()
-
-	-- rotate speed to camera angle
-	TempVec, CameraAngle = LocalToWorld( Vector(), Angle(0,ang.yaw,0), Vector(), ply:GetWAngles() )
-	ply.vel = ply.vel + CameraAngle:Forward() * mv:GetForwardSpeed() * speed
-	ply.vel = ply.vel + CameraAngle:Right() * mv:GetSideSpeed() * speed
-	ply.vel = ply.vel + CameraAngle:Up() * mv:GetUpSpeed() * speed
-	ply.vel = ply.vel * 60 * FrameTime()
-	pos = pos + ply.vel
-
-	-- handle jump
-	if ( mv:KeyDown( IN_JUMP ) and DistToGround-50 < 5 ) then 
-		ply.vel = ply.vel + ply.newUpDir * 5
-		ply:SetVelocity( ply.vel*10 )
-	end
-
-	-- apply changes
-	mv:SetVelocity( ply.vel )
-	mv:SetOrigin( pos )
-
-	return true
-end)
-
-hook.Add( "FinishMove", "CustomFinishMove", function( ply, mv )
-	-- only send networked origin when rotating
-	if ( !ply.WantRotate ) then
-		return false
-	end
-	ply:SetNetworkOrigin( mv:GetOrigin() )
-	return true
-end)
-
-
-hook.Add( "PlayerButtonDown", "CrawlToggler", function( ply, button )
-	-- send network event for crouch
-	if( button == 19 ) then
-		ply.WantRotate = !ply.WantRotate
-		resetHull(ply)
-
-		net.Start( "WRotateStatus" )
-		    net.WriteBool( ply.WantRotate )
-		net.Send( ply )
-	end
-end)
