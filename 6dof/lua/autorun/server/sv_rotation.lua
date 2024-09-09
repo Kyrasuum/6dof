@@ -1,7 +1,7 @@
 function calcAngles( ply )
 	-- get input variables for calculating players world angle
 	local Planet,_ = FindNearestGravBody( ply, 65535 )
-	local Center = Vector()
+	local PlanetPos = Vector()
 	local LocalPos = ply:real_GetPos()
 	local PlyRot = ply:GetWAngles()
     local ViewAngles = ply:real_EyeAngles()
@@ -9,31 +9,28 @@ function calcAngles( ply )
 
 	-- find normal position from nearest planet core offset
 	if( Planet ~= nil ) then
-		Center = Planet:GetPos()
+		PlanetPos = Planet:GetPos()
 	end 
-	local Normal = (LocalPos - Center):GetNormalized()
+	local Normal = (LocalPos - PlanetPos):GetNormalized()
 
 	-- find quaternion rotation
-	local PlyUp = PlyRot:Up()
 	local PlyFwd = PlyRot:Forward()
-	if( PlyUp:Distance( Normal ) > 0.01 ) then
-		-- calculate a forward vector parallel to surface
-		local Right = PlyFwd:Cross(Normal)
-		local Forward = Normal:Cross(Right)
-		
-		-- create quaternion from normal and forward
-		local Quat = Quaternion()
-		Quat:SetDirection(Forward, Normal)
+	-- calculate a forward vector parallel to surface
+	local Right = PlyFwd:Cross(Normal)
+	local Forward = Normal:Cross(Right)
+	
+	-- create quaternion from normal and forward
+	local Quat = Quaternion()
+	Quat:SetDirection(Forward, Normal)
 
-		-- calculate rotation from quaternion
-		NewAngle = Quat:Angle()
+	-- calculate rotation from quaternion
+	NewAngle = Quat:Angle()
 
-		-- rollover for angles
-		NewAngle:Normalize()
+	-- rollover for angles
+	NewAngle:Normalize()
 
-		-- broadcast new player angles
-		ply:SetWAngles( NewAngle )
-	end
+	-- broadcast new player angles
+	ply:SetWAngles( NewAngle )
 end
 
 function stickToProp( ply )

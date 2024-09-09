@@ -38,10 +38,12 @@ function FindNearestEntity( className, src, range )
 end
 
 -- tracking planetphys objects to speed up calculations a bit
-GravBodies = ents.FindByClass( "planetphys" )
+local GravBodies = {}
 hook.Add( "OnEntityCreated", "GravBodiesList", function( ent )
+	if( ent:GetClass() != "planetphys" || !ent:IsValid() ) then return end
+    -- check if init done yet
+    InitGravBodies()
     -- add to list
-	if( not ent:IsValid() or not ent:GetClass() == "planetphys" ) then return end
 	GravBodies[#GravBodies+1] = ent
 
     -- cleanup function when entity is removed
@@ -54,13 +56,22 @@ hook.Add( "OnEntityCreated", "GravBodiesList", function( ent )
     end )
 end )
 
+function InitGravBodies()
+    if ( #GravBodies == 0 ) then
+        GravBodies = ents.FindByClass( "planetphys" )
+    end
+end
+
 function FindNearestGravBody( src, range )
-    -- finds the nearest gravity body from src object up to a max distance
 	if (!IsValid(src)) then return nil, 0 end
+    -- check if init done yet
+    InitGravBodies()
+
+    -- finds the nearest gravity body from src object up to a max distance
     local nearestEnt;
     for i, entity in ipairs( GravBodies ) do
         local distance = src:GetPos():Distance( entity:GetPos() );
-        if( distance <= range ) then
+        if( distance <= range && src != ent ) then
             nearestEnt = entity;
             range = distance; 
         end
