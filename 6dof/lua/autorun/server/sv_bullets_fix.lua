@@ -4,9 +4,9 @@ hook.Add( "EntityFireBullets", "CustomEntityFireBullets", function( entity, data
 	if( !ply.WantRotate ) then return true end
 	if( ply.Crouch == nil ) then ply.Crouch = 0 end
 
-	TempVec, CameraAngle = LocalToWorld( Vector(), ply:EyeAngles(), Vector(), ply:GetWAngles() )
+	_, CameraAngle = LocalToWorld( Vector(), ply:real_EyeAngles(), Vector(), ply:GetWAngles() )
 	data.Dir = CameraAngle:Forward()
-	data.Src = ply:GetPos() + Vector(0,0,15) - ply.newUpDir*15 + ply.newUpDir*ply.Crouch + ply:GetWAngles():Forward()
+	data.Src = ply:GetPos()+ ply:GetWAngles():Forward()
 	return true
 end)
 

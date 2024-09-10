@@ -1,9 +1,3 @@
-function calcGravity( ply, DistToGround )
-	-- calculate velocity to apply due to gravity
-	local _,PlanetDist = FindNearestGravBody( ply, 65535 )
-	return -( ply.newUpDir*(1 - PlanetDist/65535)*(50)*(DistToGround/38 - 1) )*FrameTime()
-end
-
 hook.Add( "Move", "CustomMove", function( ply, mv )
 	if( !ply.WantRotate ) then
 		return mv
@@ -18,38 +12,72 @@ hook.Add( "Move", "CustomMove", function( ply, mv )
 
 	local ang = mv:GetMoveAngles()
 	local pos = mv:GetOrigin()
-	local vel = mv:GetVelocity()
+	if( ply.vel == nil ) then ply.vel = Vector() end
+	local ft = FrameTime()
 
 	-- calculate speed
-	local speed = 0.0025 * FrameTime()
+	local speed = 0.0015 * ft
 	if ( mv:KeyDown( IN_SPEED ) ) then speed = speed * 2 end
 
 	-- find ground
-	if( ply.newUpDir == nil ) then ply.newUpDir = Vector() end
-	ply.newUpDir = ply:GetWAngles():Up()
-	GroundTrace = util.QuickTrace( ply:GetPos() + ply.newUpDir*32 , ply.newUpDir*-100 , ply )
-	DistToGround = GroundTrace.HitPos:Distance( GroundTrace.StartPos )
-	
-	-- adding gravity
-	if( ply.vel == nil ) then ply.vel = Vector() end
-	ply.vel = ply.vel + calcGravity( ply, DistToGround )
-	
+	local PlyUp = ply:GetWAngles():Up()
+	local GroundTrace = util.QuickTrace( ply:real_GetPos(), PlyUp*-32, ply )
+	ply:SetGroundEntity(GroundTrace.Entity)
+
+	-- calculate velocity to apply due to gravity
+	local Planet, PlanetDist = FindNearestGravBody( ply, 65535 )
+	local Grav = PlyUp * -math.pow(PlanetDist/65535, 2) * 100000
+
+	-- detect if 'grounded'
+	ply.grounded = GroundTrace.Fraction < 1 and (ply.vel+Grav):Dot(PlyUp) < 0.3
+
+	-- handle jump
+	if ( mv:KeyDown( IN_JUMP ) and ply.grounded ) then
+		ply.vel = ply.vel + PlyUp*20
+		speed = speed * 1.5
+	end
 
 	-- rotate speed to camera angle
 	TempVec, CameraAngle = LocalToWorld( Vector(), Angle(0,ang.yaw,0), Vector(), ply:GetWAngles() )
-	ply.vel = ply.vel + CameraAngle:Forward() * mv:GetForwardSpeed() * speed
-	ply.vel = ply.vel + CameraAngle:Right() * mv:GetSideSpeed() * speed
-	ply.vel = ply.vel + CameraAngle:Up() * mv:GetUpSpeed() * speed
-	ply.vel = ply.vel * 60 * FrameTime()
-	pos = pos + ply.vel
+	local move = Vector()
+	move = move + CameraAngle:Forward() * mv:GetForwardSpeed() * speed
+	move = move + CameraAngle:Right() * mv:GetSideSpeed() * speed
+	move = move + CameraAngle:Up() * mv:GetUpSpeed() * speed
 
-	-- handle jump
-	if ( mv:KeyDown( IN_JUMP ) and DistToGround-50 < 5 ) then 
-		ply.vel = ply.vel + ply.newUpDir * 5
-		ply:SetVelocity( ply.vel*10 )
+	if( ply.grounded ) then
+		-- apply footstep sound
+		if(move:Length() > 0) then
+			if( ply.LastFootstep == nil ) then ply.LastFootstep = 0 end
+			if( ply.LeftFootstep == nil ) then ply.LeftFootstep = false end
+			if( CurTime() > ply.LastFootstep ) then
+				local sfc = util.GetSurfaceData(GroundTrace.SurfaceProps)
+				ply.LeftFootstep = !ply.LeftFootstep
+				ply.LastFootstep = CurTime()+0.35-0.5*(speed/0.00015-0.15)
+				if( ply.LeftFootstep ) then
+					EmitSound(sfc.stepLeftSound, ply:real_GetPos())
+				else
+					EmitSound(sfc.stepRightSound, ply:real_GetPos())
+				end
+			end
+		end
+		-- apply ground friction
+		ply.vel = ply.vel * math.pow(0.01,ft)
 	end
 
+	-- apply air friction
+	if( ply:InAtmosphere() ) then
+		ply.vel = ply.vel * math.pow(0.15,ft)
+	end
+
+	-- stop short of slamming us into ground with gravity
+	local GravTrace = util.QuickTrace( ply:real_GetPos()+PlyUp, Grav+ply.vel, ply )
+	Grav = Grav * math.max(0, GravTrace.Fraction-0.5) * ft
+
+	-- adding gravity and movement
+	ply.vel = ply.vel + Grav + move
+
 	-- apply changes
+	pos = pos + ply.vel
 	mv:SetVelocity( ply.vel )
 	mv:SetOrigin( pos )
 

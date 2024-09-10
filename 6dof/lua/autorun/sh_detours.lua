@@ -33,10 +33,17 @@ PLAYER.real_GetAimVector = PLAYER.GetAimVector
 PLAYER.real_SetEyeAngles = PLAYER.SetEyeAngles
 
 local ENTITY = FindMetaTable("Entity")
-ENTITY.real_EyePos = ENTITY.EyePos
-ENTITY.real_EyeAngles = ENTITY.EyeAngles
-ENTITY.real_GetPos = ENTITY.GetPos
-ENTITY.real_GetAngles = ENTITY.GetAngles
-ENTITY.real_IsOnGround = ENTITY.IsOnGround
-ENTITY.real_OnGround = ENTITY.OnGround
-ENTITY.real_SetAngles = ENTITY.SetAngles
+PLAYER.real_EyePos = ENTITY.EyePos
+PLAYER.real_EyeAngles = ENTITY.EyeAngles
+PLAYER.real_GetPos = ENTITY.GetPos
+function PLAYER:GetPos()
+    local up = ply:GetWAngles():Up()
+    return ply:real_GetPos() + Vector(0,0,15) - up*16 + up*ply.Crouch
+end
+
+PLAYER.real_GetAngles = ENTITY.GetAngles
+PLAYER.real_IsOnGround = ENTITY.IsOnGround
+PLAYER.real_OnGround = ENTITY.OnGround
+PLAYER.real_GetGroundEntity = ENTITY.GetGroundEntity
+PLAYER.real_GetGroundSpeedVelocity = ENTITY.GetGroundSpeedVelocity
+PLAYER.real_SetAngles = ENTITY.SetAngles

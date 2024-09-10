@@ -71,4 +71,3 @@ function PLAYER:GetLocalVelocityPitch()
 	LocalVel = WorldToLocal( self:GetVelocity(), Angle(0,0,0) , Vector(0,0,0), EyeAngles )
 	return LocalVel
 end
- 

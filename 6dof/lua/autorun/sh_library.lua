@@ -6,10 +6,10 @@ local ENTITY = FindMetaTable("Entity") --Get the meta table of entity
 function PLAYER:InAtmosphere()
 	ent, range = FindNearestGravBody( self, 65535 )
     if range > ent:GetTable().atmos then
-		src:SetDSP(31) -- Space effect
+		self:SetDSP(31) -- Space effect
     	return false
     else
-		src:SetDSP(1) -- Normal effect
+		self:SetDSP(1) -- Normal effect
     	return true
     end
 end

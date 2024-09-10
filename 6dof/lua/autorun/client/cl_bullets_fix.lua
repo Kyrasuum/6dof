@@ -5,7 +5,7 @@ hook.Add( "EntityFireBullets", "CustomEntityFireBullets", function( entity, data
 	if( ply.newUpDir == nil ) then ply.newUpDir = Vector() end
 	ply.newUpDir = ply:GetWAngles():Up()
 
-	TempVec, CameraAngle = LocalToWorld( Vector(), ply:EyeAngles(), Vector(), ply:GetWAngles() )
+	TempVec, CameraAngle = LocalToWorld( Vector(), ply:real_EyeAngles(), Vector(), ply:GetWAngles() )
 	data.Dir = CameraAngle:Forward()
 	data.Src = ply.CameraFixPos
 

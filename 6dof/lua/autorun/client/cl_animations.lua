@@ -13,8 +13,8 @@ function rotatePlayer( ply )
 
 	ply.WAngleLerp = LerpAngle(  0.15*FrameTime()*30 , ply.WAngleLerp, WAngle )
 
-	TempVec, NewAngle = LocalToWorld( Vector(), Angle(0,ply:EyeAngles().yaw,0), Vector(), ply.WAngleLerp )
-	LocalVelocity, TrashVar = WorldToLocal( ( ply:GetPos() - ply.PrevPose ), Angle() , Vector(), NewAngle )
+	_, NewAngle = LocalToWorld( Vector(), Angle(0,ply:EyeAngles().yaw,0), Vector(), ply.WAngleLerp )
+	LocalVelocity, _ = WorldToLocal( ( ply:GetPos() - ply.PrevPose ), Angle() , Vector(), NewAngle )
 
 	ply.NewAngle = NewAngle
 
