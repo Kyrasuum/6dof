@@ -37,8 +37,8 @@ PLAYER.real_EyePos = ENTITY.EyePos
 PLAYER.real_EyeAngles = ENTITY.EyeAngles
 PLAYER.real_GetPos = ENTITY.GetPos
 function PLAYER:GetPos()
-    local up = ply:GetWAngles():Up()
-    return ply:real_GetPos() + Vector(0,0,15) - up*16 + up*ply.Crouch
+    local up = self:GetWAngles():Up()
+    return self:real_GetPos() + Vector(0,0,15) - up*16 + up*self.Crouch
 end
 
 PLAYER.real_GetAngles = ENTITY.GetAngles
