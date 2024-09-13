@@ -1,0 +1,10 @@
+
+@PointClass base(Targetname, Parentname)  sphere(smin) sphere(smax) sphere(gmax) sphere(atmos)  = planetphys : 
+	"This defines the center of mass for gravitational body."
+[
+	gmul(float) : "grav multiplier" : "1.0" : "multiplier for force of gravity"
+	smin(float) : "surface min" : "0.0" : "minimum distance for surface level gravity"
+	smax(float) : "surface max" : "1.0" : "maximum distance for surface level gravity"
+	gmax(float) : "grav max" : "2.0" : "maximum distance gravity can affect an object"
+	atmos(float) : "atmosphere radius" : "0.0" : "the radius at which the atmosphere of the planet extends out applying drag"
+]

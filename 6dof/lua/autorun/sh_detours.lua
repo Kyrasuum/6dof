@@ -37,6 +37,10 @@ PLAYER.real_EyePos = ENTITY.EyePos
 PLAYER.real_EyeAngles = ENTITY.EyeAngles
 PLAYER.real_GetPos = ENTITY.GetPos
 function PLAYER:GetPos()
+    if not self.WantRotate then
+        return self:real_GetPos()
+    end
+    if( self.Crouch == nil ) then self.Crouch = 1 end
     local up = self:GetWAngles():Up()
     return self:real_GetPos() + Vector(0,0,15) - up*16 + up*self.Crouch
 end

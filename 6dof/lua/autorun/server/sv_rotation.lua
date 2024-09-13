@@ -120,10 +120,6 @@ function resetHull( ply )
 		-- reset angle here as well to allow reseting player to upright
 		NewAngle = Angle()
 		ply:SetWAngles( NewAngle )
-		net.Start( "WangleSender" )
-			net.WriteEntity( ply )
-			net.WriteAngle( NewAngle )
-		net.Broadcast()
 	end
 end
 

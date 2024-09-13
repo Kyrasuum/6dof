@@ -1,4 +1,23 @@
+function calcFootstep( ply, move, speed, GroundTrace )
+	-- attempts to play a footstep sound based on input
+	if(move:Length() > 0) then
+		if( ply.LastFootstep == nil ) then ply.LastFootstep = 0 end
+		if( ply.LeftFootstep == nil ) then ply.LeftFootstep = false end
+		if( CurTime() > ply.LastFootstep ) then
+			local sfc = util.GetSurfaceData(GroundTrace.SurfaceProps)
+			ply.LeftFootstep = !ply.LeftFootstep
+			ply.LastFootstep = CurTime()+0.35-0.5*(speed/0.00015-0.15)
+			if( ply.LeftFootstep ) then
+				EmitSound(sfc.stepLeftSound, ply:real_GetPos())
+			else
+				EmitSound(sfc.stepRightSound, ply:real_GetPos())
+			end
+		end
+	end
+end
+
 hook.Add( "Move", "CustomMove", function( ply, mv )
+	-- alters movement for player
 	if( !ply.WantRotate ) then
 		return mv
 	end
@@ -17,7 +36,7 @@ hook.Add( "Move", "CustomMove", function( ply, mv )
 
 	-- calculate speed
 	local speed = 0.0015 * ft
-	if ( mv:KeyDown( IN_SPEED ) ) then speed = speed * 2 end
+	if( mv:KeyDown( IN_SPEED ) ) then speed = speed * 2 end
 
 	-- find ground
 	local PlyUp = ply:GetWAngles():Up()
@@ -25,14 +44,13 @@ hook.Add( "Move", "CustomMove", function( ply, mv )
 	ply:SetGroundEntity(GroundTrace.Entity)
 
 	-- calculate velocity to apply due to gravity
-	local Planet, PlanetDist = FindNearestGravBody( ply, 65535 )
-	local Grav = PlyUp * -math.pow(PlanetDist/65535, 2) * 100000
+	local Grav = CalcGravVel(ply, nil)
 
 	-- detect if 'grounded'
 	ply.grounded = GroundTrace.Fraction < 1 and (ply.vel+Grav):Dot(PlyUp) < 0.3
 
 	-- handle jump
-	if ( mv:KeyDown( IN_JUMP ) and ply.grounded ) then
+	if( mv:KeyDown( IN_JUMP ) and ply.grounded ) then
 		ply.vel = ply.vel + PlyUp*20
 		speed = speed * 1.5
 	end
@@ -46,20 +64,7 @@ hook.Add( "Move", "CustomMove", function( ply, mv )
 
 	if( ply.grounded ) then
 		-- apply footstep sound
-		if(move:Length() > 0) then
-			if( ply.LastFootstep == nil ) then ply.LastFootstep = 0 end
-			if( ply.LeftFootstep == nil ) then ply.LeftFootstep = false end
-			if( CurTime() > ply.LastFootstep ) then
-				local sfc = util.GetSurfaceData(GroundTrace.SurfaceProps)
-				ply.LeftFootstep = !ply.LeftFootstep
-				ply.LastFootstep = CurTime()+0.35-0.5*(speed/0.00015-0.15)
-				if( ply.LeftFootstep ) then
-					EmitSound(sfc.stepLeftSound, ply:real_GetPos())
-				else
-					EmitSound(sfc.stepRightSound, ply:real_GetPos())
-				end
-			end
-		end
+		calcFootstep(ply, move, speed, GroundTrace)
 		-- apply ground friction
 		ply.vel = ply.vel * math.pow(0.01,ft)
 	end

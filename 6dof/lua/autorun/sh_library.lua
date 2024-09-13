@@ -5,7 +5,7 @@ local ENTITY = FindMetaTable("Entity") --Get the meta table of entity
 
 function PLAYER:InAtmosphere()
 	ent, range = FindNearestGravBody( self, 65535 )
-    if range > ent:GetTable().atmos then
+    if range > ent.atmos then
 		self:SetDSP(31) -- Space effect
     	return false
     else
@@ -77,4 +77,31 @@ function FindNearestGravBody( src, range )
         end
     end
     return nearestEnt, range;
+end
+
+function CalcGravVel( obj, planets )
+    -- calculate the velocity to apply due to gravity
+    local grav = Vector()
+    if( planets == nil ) then
+        planets = GravBodies
+    end
+
+    for _, planet in ipairs( planets ) do
+        local offset = obj:GetPos() - planet:GetPos()
+        local dist = offset:Length()
+        offset:Normalize()
+
+        local gmax = planet.gmax
+        if( dist > gmax ) then
+            continue
+        end
+
+        local gmul = planet.gmul
+        local smax = planet.smax
+        local smin = planet.smin
+
+        local falloff = math.min(1, (gmax-dist)/(gmax-smax), dist/smin)
+        grav = grav + offset*gmul*falloff
+    end
+    return grav
 end
